@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juego - Kitchen Arena</title>
+
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: url("fondo.png") no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+    color: white;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Oscurecer fondo */
+body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: -1;
+}
+
+/* ===== HUD SUPERIOR ===== */
+.hud {
+    background: rgba(0,0,0,0.85);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    border-bottom: 2px solid rgba(255,255,255,0.1);
+}
+
+.hud div {
+    font-size: 14px;
+}
+
+/* ===== AREA DE JUEGO ===== */
+.area-juego {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.campo-juego {
+    width: 80%;
+    height: 75%;
+    background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(6px);
+    border-radius: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    opacity: 0.8;
+}
+
+/* ===== BOTONES ===== */
+.btn-custom {
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+/* ===== MODAL PAUSA ===== */
+.modal-content {
+    background: rgba(20,20,20,0.95);
+    color: white;
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(255,87,34,0.5);
+}
+
+.modal-title {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+}
+</style>
+
+</head>
+<body>
+
+<!-- HUD -->
+<div class="hud">
+    <div>❤️ Vidas: 3</div>
+    <div>🔥 Elemento Actual: Fuego</div>
+    <div>📦 Cola: Agua → Hielo → Aire</div>
+    <button class="btn btn-outline-light btn-sm btn-custom" data-bs-toggle="modal" data-bs-target="#pausaModal">
+        Pausa
+    </button>
+</div>
+
+<!-- AREA DE JUEGO -->
+<div class="area-juego">
+    <div class="campo-juego">
+        Aquí irá el canvas WebGL
+    </div>
+</div>
+
+<!-- MODAL PAUSA -->
+<div class="modal fade" id="pausaModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center p-4">
+      <h5 class="modal-title mb-3">⏸ Juego en Pausa</h5>
+      <div class="d-grid gap-2">
+        <button type="button" class="btn btn-success btn-custom" data-bs-dismiss="modal">
+            Reanudar
+        </button>
+        <a href="index.html" class="btn btn-danger btn-custom">
+            Salir al Menú
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

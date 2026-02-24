@@ -1,0 +1,105 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: url("fondo.png") no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+    color: white;
+    position: relative;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: -1;
+}
+
+.pantalla {
+    display: none;
+    height: 100vh;
+    width: 100%;
+}
+
+.activa {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.titulo-juego {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 4rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(255,87,34,0.9);
+}
+
+.titulo-seccion {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+}
+
+.glow {
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    box-shadow: 0 0 15px rgba(255,87,34,0.6);
+    transition: all 0.3s ease;
+}
+
+.glow:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 30px rgba(255,87,34,1);
+}
+
+.caja-menu {
+    background: rgba(0,0,0,0.8);
+    padding: 40px;
+    border-radius: 15px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 0 25px rgba(0,0,0,0.6);
+    min-width: 320px;
+    width: 400px;
+}
+
+.areaJuego {
+    flex: 1;
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.placeholder-text {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    opacity: 0.7;
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.overlay .card {
+    background: rgba(20,20,20,0.95);
+    color: white;
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(255,87,34,0.5);
+}
