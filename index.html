@@ -72,13 +72,56 @@ body::before {
         font-size: 2.5rem;
     }
 }
+.marco-neon {
+    position: relative;
+    padding: 60px 50px;
+    border-radius: 20px;
+}
+
+/* El borde */
+.marco-neon::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    padding: 2px; /* grosor del borde */
+
+    background: linear-gradient(
+        45deg,
+        #ff0080,   /* rosa */
+        #ccff00,   /* limón */
+        #ff0000,   /* rojo */
+        #00bfff,   /* azul */
+        #ff0080
+    );
+
+    background-size: 400% 400%;
+    animation: neonFlow 8s linear infinite;
+
+    /* magia → crea borde hueco */
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+
+    filter: blur(20px);
+    pointer-events: none;
+}
+
+@keyframes neonFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 </style>
 
 </head>
 
 <body>
 
-<div class="caja-menu">
+<div class="caja-menu marco-neon">
     <h1 class="titulo-juego">Kitchen Arena</h1>
 
     <div class="d-grid gap-3 col-12 col-md-6 mx-auto">

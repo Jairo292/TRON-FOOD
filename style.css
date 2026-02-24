@@ -103,3 +103,41 @@ body::before {
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(255,87,34,0.5);
 }
+
+/* ===== NEON FRAME ===== */
+
+.neon-frame {
+    position: relative;
+    z-index: 0;
+}
+
+.neon-frame::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 16px;
+
+    background: linear-gradient(
+        45deg,
+        #ff2df7,   /* rosa */
+        #eaff00,   /* amarillo limón */
+        #ff3b3b,   /* rojo */
+        #00d4ff,   /* azul */
+        #ff2df7
+    );
+
+    filter: blur(8px);
+    opacity: 0.9;
+    z-index: -1;
+}
+
+/* animación glow */
+.neon-frame::before {
+    background-size: 300% 300%;
+    animation: neonMove 6s linear infinite;
+}
+
+@keyframes neonMove {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+}

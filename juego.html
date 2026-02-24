@@ -41,20 +41,25 @@ body::before {
 /* ===== HUD SUPERIOR ===== */
 .hud {
     background: rgba(0,0,0,0.85);
-    padding: 15px 30px;
+
+    padding: 22px 40px;   /* antes 15px → más alto */
+    min-height: 80px;     /* altura real del HUD */
+
     display: flex;
     justify-content: space-between;
     align-items: center;
+
     font-family: 'Orbitron', sans-serif;
     letter-spacing: 1px;
+
     border-bottom: 2px solid rgba(255,255,255,0.1);
 }
 
 .hud div {
-    font-size: 14px;
+    font-size: 18px;
+    backdrop-filter: blur(8px);
 }
 
-/* ===== AREA DE JUEGO ===== */
 .area-juego {
     flex: 1;
     display: flex;
@@ -63,8 +68,8 @@ body::before {
 }
 
 .campo-juego {
-    width: 80%;
-    height: 75%;
+    width: 95%;
+    height: 90%;
     background: rgba(255,255,255,0.05);
     border: 2px solid rgba(255,255,255,0.15);
     backdrop-filter: blur(6px);
@@ -73,18 +78,16 @@ body::before {
     justify-content: center;
     align-items: center;
     font-family: 'Orbitron', sans-serif;
-    font-size: 22px;
+    font-size: 26px;
     opacity: 0.8;
 }
 
-/* ===== BOTONES ===== */
 .btn-custom {
     border-radius: 10px;
     font-weight: 600;
     letter-spacing: 1px;
 }
 
-/* ===== MODAL PAUSA ===== */
 .modal-content {
     background: rgba(20,20,20,0.95);
     color: white;
@@ -96,29 +99,46 @@ body::before {
     font-family: 'Orbitron', sans-serif;
     letter-spacing: 2px;
 }
+
+.icono-elemento {
+    width: 32px;
+    height: 28px;
+    object-fit: contain;
+    margin-left: 6px;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
+}
 </style>
 
 </head>
 <body>
 
-<!-- HUD -->
+
 <div class="hud">
-    <div>❤️ Vidas: 3</div>
-    <div>🔥 Elemento Actual: Fuego</div>
-    <div>📦 Cola: Agua → Hielo → Aire</div>
+    <div>Vidas: 3</div>
+    <div class="elemento-actual">
+  Elemento Actual:
+  <img src="iconos/salsa.png" class="icono-elemento">
+</div>
+   <div class="cola">
+  Cola:
+  <img src="iconos/limonada.png" class="icono-elemento">
+  →
+  <img src="iconos/yogurt.png" class="icono-elemento">
+  →
+  <img src="iconos/algodon.png" class="icono-elemento">
+</div>
     <button class="btn btn-outline-light btn-sm btn-custom" data-bs-toggle="modal" data-bs-target="#pausaModal">
         Pausa
     </button>
 </div>
 
-<!-- AREA DE JUEGO -->
 <div class="area-juego">
     <div class="campo-juego">
         Aquí irá el canvas WebGL
     </div>
 </div>
 
-<!-- MODAL PAUSA -->
 <div class="modal fade" id="pausaModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content text-center p-4">
