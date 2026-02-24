@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Juego - Kitchen Arena</title>
 
-<!-- Bootstrap -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
@@ -29,7 +26,6 @@ body {
     flex-direction: column;
 }
 
-/* Oscurecer fondo */
 body::before {
     content: "";
     position: absolute;
@@ -38,12 +34,11 @@ body::before {
     z-index: -1;
 }
 
-/* ===== HUD SUPERIOR ===== */
 .hud {
     background: rgba(0,0,0,0.85);
 
-    padding: 22px 40px;   /* antes 15px → más alto */
-    min-height: 80px;     /* altura real del HUD */
+    padding: 22px 40px;  
+    min-height: 80px;     
 
     display: flex;
     justify-content: space-between;
@@ -100,6 +95,16 @@ body::before {
     letter-spacing: 2px;
 }
 
+.icono-vida
+{
+    width: 60px;
+    height: 56px;
+    object-fit: contain;
+    margin-left: 6px;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
+}
+
 .icono-elemento {
     width: 32px;
     height: 28px;
@@ -108,6 +113,16 @@ body::before {
     vertical-align: middle;
     filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
 }
+
+.modal-win {
+  box-shadow: 0 0 35px rgba(0, 255, 180, 0.35);
+  border: 1px solid rgba(0, 255, 180, 0.18);
+}
+
+.modal-lose {
+  box-shadow: 0 0 35px rgba(255, 60, 60, 0.35);
+  border: 1px solid rgba(255, 60, 60, 0.18);
+}
 </style>
 
 </head>
@@ -115,7 +130,8 @@ body::before {
 
 
 <div class="hud">
-    <div>Vidas: 3</div>
+    <div>Vidas:<img src="iconos/vidas.png" class="icono-vida">
+    </div>
     <div class="elemento-actual">
   Elemento Actual:
   <img src="iconos/salsa.png" class="icono-elemento">
@@ -131,12 +147,15 @@ body::before {
     <button class="btn btn-outline-light btn-sm btn-custom" data-bs-toggle="modal" data-bs-target="#pausaModal">
         Pausa
     </button>
+
+    
 </div>
 
 <div class="area-juego">
     <div class="campo-juego">
         Aquí irá el canvas WebGL
     </div>
+
 </div>
 
 <div class="modal fade" id="pausaModal" tabindex="-1">
@@ -150,12 +169,55 @@ body::before {
         <a href="index.html" class="btn btn-danger btn-custom">
             Salir al Menú
         </a>
+        
+    <button class="btn btn-outline-success btn-sm btn-custom" data-bs-toggle="modal" data-bs-target="#ganarModal">
+  Win
+</button>
+
+<button class="btn btn-outline-danger btn-sm btn-custom" data-bs-toggle="modal" data-bs-target="#perderModal">
+  Lose
+</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Bootstrap JS -->
+<div class="modal fade" id="ganarModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center p-4 modal-win">
+      <h5 class="modal-title mb-2">YOU WIN!</h5>
+      <p class="mb-3 opacity-75">¡Ganaste la ronda! Cocinaste.</p>
+
+      <div class="d-grid gap-2">
+        <button type="button" class="btn btn-success btn-custom" data-bs-dismiss="modal">
+          Siguiente Ronda
+        </button>
+        <a href="index.html" class="btn btn-outline-light btn-custom">
+          Volver al Menú
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="perderModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center p-4 modal-lose">
+      <h5 class="modal-title mb-2">YOU LOSE!</h5>
+      <p class="mb-3 opacity-75">Se quemó la cocina… inténtalo de nuevo.</p>
+
+      <div class="d-grid gap-2">
+        <button type="button" class="btn btn-danger btn-custom"  data-bs-dismiss="modal" id="btnReintentar">
+          Reintentar
+        </button>
+        <a href="index.html" class="btn btn-outline-light btn-custom">
+          Salir al Menú
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
