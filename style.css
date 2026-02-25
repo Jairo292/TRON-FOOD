@@ -1,7 +1,6 @@
 html, body {
     height: 100%;
     margin: 0;
-    padding: 0;
     overflow: hidden;
 }
 
@@ -11,6 +10,9 @@ body {
     background-size: cover;
     background-attachment: fixed;
     color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     position: relative;
 }
 
@@ -22,16 +24,8 @@ body::before {
     z-index: -1;
 }
 
-.pantalla {
-    display: none;
-    height: 100vh;
-    width: 100%;
-}
-
-.activa {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.caja-menu {
+    text-align: center;
 }
 
 .titulo-juego {
@@ -41,11 +35,7 @@ body::before {
     letter-spacing: 4px;
     text-transform: uppercase;
     text-shadow: 0 0 20px rgba(255,87,34,0.9);
-}
-
-.titulo-seccion {
-    font-family: 'Orbitron', sans-serif;
-    letter-spacing: 2px;
+    margin-bottom: 40px;
 }
 
 .glow {
@@ -61,83 +51,48 @@ body::before {
     box-shadow: 0 0 30px rgba(255,87,34,1);
 }
 
-.caja-menu {
-    background: rgba(0,0,0,0.8);
-    padding: 40px;
-    border-radius: 15px;
-    backdrop-filter: blur(6px);
-    box-shadow: 0 0 25px rgba(0,0,0,0.6);
-    min-width: 320px;
-    width: 400px;
+@media (max-width: 768px) {
+    .titulo-juego {
+        font-size: 2.5rem;
+    }
 }
-
-.areaJuego {
-    flex: 1;
-    width: 100%;
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(5px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.placeholder-text {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 24px;
-    opacity: 0.7;
-}
-
-.overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    justify-content: center;
-    align-items: center;
-    z-index: 999;
-}
-
-.overlay .card {
-    background: rgba(20,20,20,0.95);
-    color: white;
-    border-radius: 15px;
-    box-shadow: 0 0 30px rgba(255,87,34,0.5);
-}
-
-/* ===== NEON FRAME ===== */
-
-.neon-frame {
+.marco-neon {
     position: relative;
-    z-index: 0;
+    padding: 60px 50px;
+    border-radius: 20px;
 }
 
-.neon-frame::before {
+.marco-neon::before {
     content: "";
     position: absolute;
-    inset: -3px;
-    border-radius: 16px;
+    inset: 0;
+    border-radius: 20px;
+    padding: 2px; 
 
     background: linear-gradient(
         45deg,
-        #ff2df7,   /* rosa */
-        #eaff00,   /* amarillo limón */
-        #ff3b3b,   /* rojo */
-        #00d4ff,   /* azul */
-        #ff2df7
+        #ff0080,   
+        #ccff00, 
+        #ff0000,  
+        #00bfff, 
+        #ff0080
     );
 
-    filter: blur(8px);
-    opacity: 0.9;
-    z-index: -1;
+    background-size: 400% 400%;
+    animation: neonFlow 8s linear infinite;
+
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+
+    filter: blur(20px);
+    pointer-events: none;
 }
 
-/* animación glow */
-.neon-frame::before {
-    background-size: 300% 300%;
-    animation: neonMove 6s linear infinite;
-}
-
-@keyframes neonMove {
+@keyframes neonFlow {
     0% { background-position: 0% 50%; }
-    100% { background-position: 300% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }

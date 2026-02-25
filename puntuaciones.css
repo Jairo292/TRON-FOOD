@@ -1,0 +1,70 @@
+
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: url("fondo.png") no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: -1;
+}
+
+.caja-puntuaciones {
+    background: rgba(0,0,0,0.85);
+    padding: 40px;
+    border-radius: 15px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 0 30px rgba(0,0,0,0.6);
+    width: 600px;
+    max-width: 95%;
+    text-align: center;
+}
+
+.titulo-seccion {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    letter-spacing: 3px;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+    text-shadow: 0 0 15px rgba(255,87,34,0.8);
+}
+
+.table {
+    color: white;
+}
+
+.table thead {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+}
+
+.table tbody tr {
+    transition: 0.3s;
+}
+
+.table tbody tr:hover {
+    background: rgba(255,87,34,0.2);
+}
+
+.btn-custom {
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-top: 20px;
+}

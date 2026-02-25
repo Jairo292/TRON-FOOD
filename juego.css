@@ -1,0 +1,115 @@
+
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: url("fondo.png") no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+    color: white;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: -1;
+}
+
+.hud {
+    background: rgba(0,0,0,0.85);
+
+    padding: 22px 40px;  
+    min-height: 80px;     
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+
+    border-bottom: 2px solid rgba(255,255,255,0.1);
+}
+
+.hud div {
+    font-size: 18px;
+    backdrop-filter: blur(8px);
+}
+
+.area-juego {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.campo-juego {
+    width: 95%;
+    height: 90%;
+    background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(6px);
+    border-radius: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 26px;
+    opacity: 0.8;
+}
+
+.btn-custom {
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.modal-content {
+    background: rgba(20,20,20,0.95);
+    color: white;
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(255,87,34,0.5);
+}
+
+.modal-title {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+}
+
+.icono-vida
+{
+    width: 60px;
+    height: 56px;
+    object-fit: contain;
+    margin-left: 6px;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
+}
+
+.icono-elemento {
+    width: 32px;
+    height: 28px;
+    object-fit: contain;
+    margin-left: 6px;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
+}
+
+.modal-win {
+  box-shadow: 0 0 35px rgba(0, 255, 180, 0.35);
+  border: 1px solid rgba(0, 255, 180, 0.18);
+}
+
+.modal-lose {
+  box-shadow: 0 0 35px rgba(255, 60, 60, 0.35);
+  border: 1px solid rgba(255, 60, 60, 0.18);
+}
