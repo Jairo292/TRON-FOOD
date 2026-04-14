@@ -29,6 +29,11 @@
   →
   <img src="iconos/algodon.png" class="icono-elemento">
 </div>
+
+<div class="p-2">
+  <input id="idNombreJugador" type="text" placeholder="Tu nombre">
+  <button id="idBoton">Conectar</button>
+</div>
     <button class="btn btn-outline-light btn-sm btn-custom" data-bs-toggle="modal" data-bs-target="#pausaModal">
         Pausa
     </button>
@@ -102,6 +107,20 @@
     </div>
   </div>
 </div>
+
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
+  }
+}
+</script>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script type="module" src="./js/juego.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
