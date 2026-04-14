@@ -1,0 +1,26 @@
+# Blender 5.1.0 MTL File: 'None'
+# www.blender.org
+
+newmtl M_Bottle
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd Juice_Bottle_M_Bottle_BaseColor.png
+map_Ns Juice_Bottle_M_Bottle_Roughness.png
+map_refl Juice_Bottle_M_Bottle_Metalness.png
+map_d Juice_Bottle_M_Bottle_Opacity.png
+map_Bump -bm 1.000000 Juice_Bottle_M_Bottle_Normal.png
+
+newmtl M_Juice
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Juice_Bottle_M_Juice_BaseColor.png
+map_Ns Juice_Bottle_M_Juice_Roughness.png
+map_refl Juice_Bottle_M_Juice_Metalness.png
+map_Bump -bm 1.000000 Juice_Bottle_M_Juice_Normal.png
