@@ -277,7 +277,7 @@ async function cargarEscenario() {
         salsa.position.set(2, 0, -3);
         salsa.rotation.y = Math.PI / 2;
         scene.add(salsa);
-
+        //alo
         // taza
         const taza = await cargarModelo3D(
             "./models/taza",
