@@ -198,6 +198,124 @@ async function cargarJugadorLocalModelo() {
 
 cargarJugadorLocalModelo();
 
+async function cargarEscenario() {
+    try {
+        // algodon
+        const algodon = await cargarModelo3D(
+            "./models/algodon",
+            "algodon",
+            new THREE.Vector3(0.15, 0.15, 0.15)
+        );
+        algodon.position.set(3, 0, 2);
+        scene.add(algodon);
+
+        // catsup
+        const catsup = await cargarModelo3D(
+            "./models/catsup",
+            "Catsup",
+            new THREE.Vector3(0.6, 0.6, 0.6)
+        );
+        catsup.position.set(-4, 0, -2);
+        scene.add(catsup);
+
+        // cuchara
+        const cuchara = await cargarModelo3D(
+            "./models/cuchara",
+            "cuchara",
+            new THREE.Vector3(2, 2, 2)
+        );
+        cuchara.position.set(2, 0, 0);
+        cuchara.rotation.y = Math.PI / 2;
+        scene.add(cuchara);
+
+        // florero
+        const florero = await cargarModelo3D(
+            "./models/florero",
+            "Florero",
+            new THREE.Vector3(5, 5, 5)
+        );
+        florero.position.set(2, 0, -3);
+        florero.rotation.y = Math.PI / 2;
+        scene.add(florero);
+
+        // jugo
+        const jugo = await cargarModelo3D(
+            "./models/jugo",
+            "Jugo",
+            new THREE.Vector3(2, 2, 2)
+        );
+        jugo.position.set(2, 0, -3);
+        jugo.rotation.y = Math.PI / 2;
+        scene.add(jugo);
+
+        // limonada
+        const limonada = await cargarModelo3D(
+            "./models/limonada",
+            "Limonada",
+            new THREE.Vector3(0.15, 0.15, 0.15)
+        );
+        limonada.position.set(2, 0, -3);
+        limonada.rotation.y = Math.PI / 2;
+        scene.add(limonada);
+
+        // saleros
+        const saleros = await cargarModelo3D(
+            "./models/saleros",
+            "Saleros",
+            new THREE.Vector3(2, 2, 2)
+        );
+        saleros.position.set(2, 0, -3);
+        saleros.rotation.y = Math.PI / 2;
+        scene.add(saleros);
+
+        // salsa
+        const salsa = await cargarModelo3D(
+            "./models/salsa",
+            "Salsa",
+            new THREE.Vector3(0.15, 0.15, 0.15)
+        );
+        salsa.position.set(2, 0, -3);
+        salsa.rotation.y = Math.PI / 2;
+        scene.add(salsa);
+
+        // taza
+        const taza = await cargarModelo3D(
+            "./models/taza",
+            "Taza",
+            new THREE.Vector3(13, 13, 13)
+        );
+        taza.position.set(5, 0, -5);
+        taza.rotation.y = Math.PI / 2;
+        scene.add(taza);
+
+        // tenedor
+        const tenedor = await cargarModelo3D(
+            "./models/tenedor",
+            "Tenedor",
+            new THREE.Vector3(2, 2, 2)
+        );
+        tenedor.position.set(2, 0, 5);
+        tenedor.rotation.y = Math.PI / 2;
+        scene.add(tenedor);
+
+        // yogurt
+        const yogurt = await cargarModelo3D(
+            "./models/yogurt",
+            "Yogurt",
+            new THREE.Vector3(0.15, 0.15, 0.15)
+        );
+        yogurt.position.set(2, 0, -3);
+        yogurt.rotation.y = Math.PI / 2;
+        scene.add(yogurt);
+
+        console.log("Escenario cargado");
+    } catch (error) {
+        console.error("Error cargando escenario:", error);
+    }
+}
+
+cargarEscenario();
+
 // ---------------------------
 // TECLAS
 // ---------------------------
