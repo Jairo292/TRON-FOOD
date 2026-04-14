@@ -1,0 +1,34 @@
+# ========================
+# Node.js
+# ========================
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# ========================
+# Sistema operativo
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# Editor / IDE
+# ========================
+.vscode/
+.idea/
+
+# ========================
+# Archivos temporales
+# ========================
+*.log
+
+# ========================
+# Build / output (por si luego usan bundlers)
+# ========================
+dist/
+build/
+
+# ========================
+# Archivos sensibles (por si luego agregas config)
+# ========================
+.env
