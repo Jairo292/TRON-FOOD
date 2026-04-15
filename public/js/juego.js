@@ -38,6 +38,66 @@ const objetivoCamaraLookAt = new THREE.Vector3();
 
 // jugadores remotos
 const jugadoresRemotos = {};
+const jugadoresRemotosEnCarga = new Set();
+const posicionesPendientesRemotos = {};
+let plantillaJugadorRemotoPromise = null;
+
+function aplicarColorModelo(modelo, colorHex) {
+    modelo.traverse((child) => {
+        if (!child.isMesh) return;
+
+        if (Array.isArray(child.material)) {
+            child.material = child.material.map((material) => {
+                const nuevoMaterial = material.clone();
+                if (nuevoMaterial.color) {
+                    nuevoMaterial.color.setHex(colorHex);
+                }
+                return nuevoMaterial;
+            });
+            return;
+        }
+
+        child.material = child.material.clone();
+        if (child.material.color) {
+            child.material.color.setHex(colorHex);
+        }
+    });
+}
+
+async function obtenerPlantillaJugadorRemoto() {
+    if (!plantillaJugadorRemotoPromise) {
+        plantillaJugadorRemotoPromise = cargarModelo3D(
+            "./models/tenedor",
+            "tenedor-remoto-plantilla",
+            new THREE.Vector3(3, 3, 3)
+        )
+            .then((modelo) => {
+                modelo.rotation.x = -Math.PI / 2;
+                aplicarColorModelo(modelo, 0xff4d6d);
+                return modelo;
+            })
+            .catch((error) => {
+                console.error("No se pudo cargar el modelo remoto:", error);
+                plantillaJugadorRemotoPromise = null;
+                return null;
+            });
+    }
+
+    return plantillaJugadorRemotoPromise;
+}
+
+async function crearJugadorRemotoModelo() {
+    const plantilla = await obtenerPlantillaJugadorRemoto();
+    if (plantilla) {
+        return plantilla.clone(true);
+    }
+
+    // Fallback visual si el modelo llegara a fallar.
+    return new THREE.Mesh(
+        new THREE.BoxGeometry(1, 1, 1),
+        new THREE.MeshStandardMaterial({ color: 0xff4d6d })
+    );
+}
 
 function registrarModeloFlotante(modelo, options = {}) {
     if (!modelo) return;
@@ -133,22 +193,42 @@ function actualizarJugadoresRemotos(lista) {
 
         if (jugador.name === nombreJugador) continue;
 
-        if (!jugadoresRemotos[jugador.id]) {
-            const cuboRemoto = new THREE.Mesh(
-                new THREE.BoxGeometry(1, 1, 1),
-                new THREE.MeshStandardMaterial({ color: 0xff4d6d })
-            );
-            scene.add(cuboRemoto);
-            jugadoresRemotos[jugador.id] = cuboRemoto;
+        posicionesPendientesRemotos[jugador.id] = {
+            x: jugador.x,
+            y: jugador.y,
+            z: jugador.z
+        };
+
+        if (!jugadoresRemotos[jugador.id] && !jugadoresRemotosEnCarga.has(jugador.id)) {
+            jugadoresRemotosEnCarga.add(jugador.id);
+
+            crearJugadorRemotoModelo()
+                .then((modeloRemoto) => {
+                    if (!posicionesPendientesRemotos[jugador.id]) return;
+
+                    const posicion = posicionesPendientesRemotos[jugador.id];
+                    modeloRemoto.position.set(posicion.x, posicion.y, posicion.z);
+
+                    if (!jugadoresRemotos[jugador.id]) {
+                        jugadoresRemotos[jugador.id] = modeloRemoto;
+                        scene.add(modeloRemoto);
+                    }
+                })
+                .finally(() => {
+                    jugadoresRemotosEnCarga.delete(jugador.id);
+                });
         }
 
-        jugadoresRemotos[jugador.id].position.set(jugador.x, jugador.y, jugador.z);
+        if (jugadoresRemotos[jugador.id]) {
+            jugadoresRemotos[jugador.id].position.set(jugador.x, jugador.y, jugador.z);
+        }
     }
 
     for (const id in jugadoresRemotos) {
         if (!idsActivos.includes(id)) {
             scene.remove(jugadoresRemotos[id]);
             delete jugadoresRemotos[id];
+            delete posicionesPendientesRemotos[id];
         }
     }
 }
