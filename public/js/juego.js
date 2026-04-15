@@ -237,6 +237,7 @@ function crearEscena() {
     contenedor = document.querySelector(".campo-juego");
     contenedor.innerHTML = "";
 
+
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
 
