@@ -12,8 +12,29 @@ let scene, camera, renderer, contenedor;
 let ambientLight, directionalLight, piso;
 const teclas = {};
 let jugadorLocal = null;
+let jugadorBaseY = 0.5;
 const clock = new THREE.Clock();
 const modelosFlotantes = [];
+const FLOTACION_JUGADOR = {
+    amplitud: 0.12,
+    velocidad: 2.0
+};
+const ANIMACION_WALK_LATERAL = {
+    inclinacionMax: 0.35,
+    oscilacionYaw: 0.12,
+    velocidad: 12,
+    suavizado: 0.2
+};
+const CAMARA_JUGADOR = {
+    offsetX: 0,
+    offsetY: 7.2,
+    offsetZ: 4.2,
+    suavizado: 0.12,
+    alturaMirada: 0.4
+};
+let inclinacionLateralActual = 0;
+const objetivoCamaraPos = new THREE.Vector3();
+const objetivoCamaraLookAt = new THREE.Vector3();
 
 // jugadores remotos
 const jugadoresRemotos = {};
@@ -38,6 +59,55 @@ function animarModelosFlotantes(tiempo) {
         item.modelo.position.y = item.baseY + Math.sin(tiempo * item.velocidad + item.fase) * item.amplitud;
         item.modelo.rotation.y += item.rotacionY * 0.01;
     }
+}
+
+function animarJugadorLocal(tiempo) {
+    if (!jugadorLocal) return;
+
+    // Solo sube y baja en Y para que conserve su ubicacion horizontal.
+    jugadorLocal.position.y = jugadorBaseY + Math.sin(tiempo * FLOTACION_JUGADOR.velocidad) * FLOTACION_JUGADOR.amplitud;
+}
+
+function animarWalkLateralJugador(tiempo) {
+    if (!jugadorLocal) return;
+
+    const movIzq = teclas["a"] ? 1 : 0;
+    const movDer = teclas["d"] ? 1 : 0;
+    // Se invierte el signo para que la inclinacion visual coincida con derecha/izquierda reales.
+    const direccionLateral = movIzq - movDer;
+    const objetivoInclinacion = direccionLateral * ANIMACION_WALK_LATERAL.inclinacionMax;
+
+    inclinacionLateralActual += (objetivoInclinacion - inclinacionLateralActual) * ANIMACION_WALK_LATERAL.suavizado;
+
+    const estaMoviendoseLateral = direccionLateral !== 0;
+    const wobble = estaMoviendoseLateral
+        ? Math.sin(tiempo * ANIMACION_WALK_LATERAL.velocidad) * ANIMACION_WALK_LATERAL.oscilacionYaw * direccionLateral
+        : 0;
+
+    // Base del tenedor acostado + animacion lateral tipo walk.
+    jugadorLocal.rotation.x = -Math.PI / 2;
+    jugadorLocal.rotation.y = wobble;
+    jugadorLocal.rotation.z = inclinacionLateralActual;
+}
+
+function actualizarCamaraJugadorLocal() {
+    if (!camera || !jugadorLocal) return;
+
+    // Sigue al jugador por X/Z y mantiene altura estable para evitar mareo por la flotacion.
+    objetivoCamaraPos.set(
+        jugadorLocal.position.x + CAMARA_JUGADOR.offsetX,
+        jugadorBaseY + CAMARA_JUGADOR.offsetY,
+        jugadorLocal.position.z + CAMARA_JUGADOR.offsetZ
+    );
+
+    camera.position.lerp(objetivoCamaraPos, CAMARA_JUGADOR.suavizado);
+
+    objetivoCamaraLookAt.set(
+        jugadorLocal.position.x,
+        jugadorBaseY + CAMARA_JUGADOR.alturaMirada,
+        jugadorLocal.position.z
+    );
+    camera.lookAt(objetivoCamaraLookAt);
 }
 
 
@@ -208,6 +278,9 @@ async function cargarJugadorLocalModelo() {
         );
 
         modelo.position.copy(jugadorLocal.position);
+        // Rotacion para que el tenedor quede acostado sobre el plano.
+        modelo.rotation.x = -Math.PI / 2;
+        jugadorBaseY = modelo.position.y;
 
         scene.remove(jugadorLocal);
         jugadorLocal = modelo;
@@ -400,8 +473,11 @@ function animate() {
     requestAnimationFrame(animate);
     const tiempo = clock.getElapsedTime();
 
+    animarJugadorLocal(tiempo);
     moverJugador();
+    animarWalkLateralJugador(tiempo);
     animarModelosFlotantes(tiempo);
+    actualizarCamaraJugadorLocal();
     renderer.render(scene, camera);
 }
 
