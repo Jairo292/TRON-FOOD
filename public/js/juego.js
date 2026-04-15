@@ -3,116 +3,109 @@ import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 
 const socket = io();
-let nombreJugador = "";
+let nombreJugador = localStorage.getItem("nombreJugador") || "";
+let escenarioSeleccionado = localStorage.getItem("escenarioSeleccionado") || "1";
 let conectado = false;
+const manager = new THREE.LoadingManager();
+
+let scene, camera, renderer, contenedor;
+let ambientLight, directionalLight, piso;
+const teclas = {};
+let jugadorLocal = null;
 
 // jugadores remotos
 const jugadoresRemotos = {};
 
-// ---------------------------
-// SOCKETS
-// ---------------------------
-socket.on("connect", () => {
-    console.log("Conectado al servidor");
-});
 
-socket.on("listaJugadores", (lista) => {
-    console.log("Lista de jugadores:", lista);
 
+function configurarSockets() {
+    socket.on("connect", () => {
+        console.log("Conectado al servidor");
+
+        socket.emit("Iniciar", nombreJugador);
+        conectado = true;
+    });
+
+    socket.on("listaJugadores", (lista) => {
+        actualizarJugadoresRemotos(lista);
+    });
+}
+
+function actualizarJugadoresRemotos(lista) {
     const idsActivos = [];
 
     for (const jugador of lista) {
         idsActivos.push(jugador.id);
 
-        // si es el jugador local, solo actualizamos referencia si queremos
-        if (jugador.name === nombreJugador) {
-            continue;
-        }
+        if (jugador.name === nombreJugador) continue;
 
-        // si no existe, lo creamos
         if (!jugadoresRemotos[jugador.id]) {
             const cuboRemoto = new THREE.Mesh(
                 new THREE.BoxGeometry(1, 1, 1),
                 new THREE.MeshStandardMaterial({ color: 0xff4d6d })
             );
-            cuboRemoto.position.set(jugador.x, jugador.y, jugador.z);
             scene.add(cuboRemoto);
             jugadoresRemotos[jugador.id] = cuboRemoto;
         }
 
-        // actualizamos posición
         jugadoresRemotos[jugador.id].position.set(jugador.x, jugador.y, jugador.z);
     }
 
-    // eliminar remotos desconectados
     for (const id in jugadoresRemotos) {
         if (!idsActivos.includes(id)) {
             scene.remove(jugadoresRemotos[id]);
             delete jugadoresRemotos[id];
         }
     }
-});
+}
 
-const btnConectar = document.getElementById("idBoton");
+function crearEscena() {
+    contenedor = document.querySelector(".campo-juego");
+    contenedor.innerHTML = "";
 
-btnConectar.addEventListener("click", () => {
-    nombreJugador = document.getElementById("idNombreJugador").value.trim();
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a1a);
 
-    if (!nombreJugador) {
-        alert("Escribe un nombre");
-        return;
-    }
+    camera = new THREE.PerspectiveCamera(
+        60,
+        contenedor.clientWidth / contenedor.clientHeight,
+        0.1,
+        1000
+    );
 
-    socket.emit("Iniciar", nombreJugador);
-    conectado = true;
-    console.log("Nombre enviado:", nombreJugador);
-});
+    camera.position.set(0, 8, 12);
+    camera.lookAt(0, 0, 0);
 
-// ---------------------------
-// THREE.JS - ESCENA
-// ---------------------------
-const contenedor = document.querySelector(".campo-juego");
-contenedor.innerHTML = "";
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(contenedor.clientWidth, contenedor.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    contenedor.appendChild(renderer.domElement);
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1a1a1a);
+    ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+    scene.add(ambientLight);
 
-const camera = new THREE.PerspectiveCamera(
-    60,
-    contenedor.clientWidth / contenedor.clientHeight,
-    0.1,
-    1000
-);
+    directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+    directionalLight.position.set(5, 10, 7);
+    scene.add(directionalLight);
 
-camera.position.set(0, 8, 12);
-camera.lookAt(0, 0, 0);
+    const textureLoader = new THREE.TextureLoader();
+const texturaPiso = textureLoader.load("./mesa.png");
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-renderer.setSize(contenedor.clientWidth, contenedor.clientHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
-contenedor.appendChild(renderer.domElement);
+texturaPiso.wrapS = THREE.RepeatWrapping;
+texturaPiso.wrapT = THREE.RepeatWrapping;
+texturaPiso.repeat.set(6, 6);
 
-// ---------------------------
-// LUCES
-// ---------------------------
-const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
-scene.add(ambientLight);
-
-const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight.position.set(5, 10, 7);
-scene.add(directionalLight);
-
-// ---------------------------
-// PISO
-// ---------------------------
-const piso = new THREE.Mesh(
+piso = new THREE.Mesh(
     new THREE.PlaneGeometry(20, 20),
-    new THREE.MeshStandardMaterial({ color: 0x666666 })
+    new THREE.MeshStandardMaterial({ map: texturaPiso })
 );
+
 piso.rotation.x = -Math.PI / 2;
 scene.add(piso);
+    window.addEventListener("resize", actualizarTamanoRenderer);
+    actualizarTamanoRenderer();
+}
 
-const manager = new THREE.LoadingManager();
 
 manager.onStart = function (url, itemsLoaded, itemsTotal) {
     console.log("Started loading file:", url);
@@ -166,22 +159,28 @@ function cargarModelo3D(path, nombre, vectorEscala) {
     });
 }
 
-// ---------------------------
-// JUGADOR LOCAL
-// ---------------------------
-let jugadorLocal = new THREE.Mesh(
+/*let jugadorLocal = new THREE.Mesh(
     new THREE.BoxGeometry(1, 1, 1),
     new THREE.MeshStandardMaterial({ color: 0x00ffcc })
 );
 jugadorLocal.position.set(0, 0.5, 0);
 scene.add(jugadorLocal);
+*/
 
 async function cargarJugadorLocalModelo() {
     try {
+        // cubo temporal
+        jugadorLocal = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshStandardMaterial({ color: 0x00ffcc })
+        );
+        jugadorLocal.position.set(0, 0.5, 0);
+        scene.add(jugadorLocal);
+
         const modelo = await cargarModelo3D(
-            "./models/Anakin",
-            "Anakin",
-            new THREE.Vector3(15, 15, 15)
+            "./models/tenedor",
+            "tenedor",
+            new THREE.Vector3(3,3,3)
         );
 
         modelo.position.copy(jugadorLocal.position);
@@ -195,9 +194,7 @@ async function cargarJugadorLocalModelo() {
         console.error("No se pudo cargar el modelo local:", error);
     }
 }
-
-cargarJugadorLocalModelo();
-
+/*
 async function cargarEscenario() {
     try {
         // algodon
@@ -313,25 +310,17 @@ async function cargarEscenario() {
         console.error("Error cargando escenario:", error);
     }
 }
+*/
+function configurarTeclado() {
+    window.addEventListener("keydown", (event) => {
+        teclas[event.key.toLowerCase()] = true;
+    });
 
-cargarEscenario();
+    window.addEventListener("keyup", (event) => {
+        teclas[event.key.toLowerCase()] = false;
+    });
+}
 
-// ---------------------------
-// TECLAS
-// ---------------------------
-const teclas = {};
-
-window.addEventListener("keydown", (event) => {
-    teclas[event.key.toLowerCase()] = true;
-});
-
-window.addEventListener("keyup", (event) => {
-    teclas[event.key.toLowerCase()] = false;
-});
-
-// ---------------------------
-// MOVIMIENTO
-// ---------------------------
 function moverJugador() {
     const velocidad = 0.08;
     let seMovio = false;
@@ -362,9 +351,16 @@ function moverJugador() {
     }
 }
 
-// ---------------------------
-// RESIZE
-// ---------------------------
+async function cargarEscenarioSeleccionado() {
+    if (escenarioSeleccionado === "1") {
+        await cargarEscenario1();
+    } else if (escenarioSeleccionado === "2") {
+        await cargarEscenario2();
+    } else {
+        await cargarEscenario3();
+    }
+}
+
 function actualizarTamanoRenderer() {
     const ancho = contenedor.clientWidth;
     const alto = contenedor.clientHeight;
@@ -376,9 +372,6 @@ function actualizarTamanoRenderer() {
 
 window.addEventListener("resize", actualizarTamanoRenderer);
 
-// ---------------------------
-// ANIMACIÓN
-// ---------------------------
 function animate() {
     requestAnimationFrame(animate);
 
@@ -386,5 +379,109 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-actualizarTamanoRenderer();
-animate();
+async function cargarEscenario1() {
+    const algodon = await cargarModelo3D(
+        "./models/algodon",
+        "algodon",
+        new THREE.Vector3(0.15, 0.15, 0.15)
+    );
+    algodon.position.set(3, 0, 0);
+    scene.add(algodon);
+
+      const saleros = await cargarModelo3D(
+            "./models/saleros",
+            "saleros",
+            new THREE.Vector3(20, 20, 20)
+        );
+        saleros.position.set(4, 0, 4);
+        saleros.rotation.y = Math.PI / 2;
+        scene.add(saleros);
+    
+        // florero
+        const florero = await cargarModelo3D(
+            "./models/florero",
+            "florero",
+            new THREE.Vector3(6, 6, 6)
+        );
+        florero.position.set(-7, 0, -3);
+        florero.rotation.y = Math.PI / 2;
+        scene.add(florero);
+}
+
+async function cargarEscenario2() {
+    const salsa = await cargarModelo3D(
+        "./models/salsa",
+        "salsa",
+        new THREE.Vector3(0.15, 0.15, 0.15)
+    );
+    salsa.position.set(2, 0, -3);
+    scene.add(salsa);
+
+        const catsup = await cargarModelo3D(
+            "./models/catsup",
+            "catsup",
+            new THREE.Vector3(0.6, 0.6, 0.6)
+        );
+        catsup.position.set(-4, 0, -2);
+        scene.add(catsup);
+
+          const jugo = await cargarModelo3D(
+            "./models/jugo",
+            "jugo",
+            new THREE.Vector3(5, 5, 5)
+        );
+        jugo.position.set(2, 0, -3);
+        jugo.rotation.y = Math.PI / 2;
+        scene.add(jugo);
+}
+
+async function cargarEscenario3() {
+    //await cargarEscenario1();
+    //await cargarEscenario2();
+
+    const yogurt = await cargarModelo3D(
+        "./models/yogurt",
+        "yogurt",
+        new THREE.Vector3(0.15, 0.15, 0.15)
+    );
+    yogurt.position.set(-3, 0, 2);
+    scene.add(yogurt);
+
+      const limonada = await cargarModelo3D(
+            "./models/limonada",
+            "Limonada",
+            new THREE.Vector3(0.15, 0.15, 0.15)
+        );
+        limonada.position.set(-1, 0, 7);
+        limonada.rotation.y = Math.PI / 2;
+        scene.add(limonada);
+
+
+         const taza = await cargarModelo3D(
+            "./models/taza",
+            "taza",
+            new THREE.Vector3(15, 15, 15)
+        );
+        taza.position.set(5, 0, -5);
+        taza.rotation.y = Math.PI / 2;
+        scene.add(taza);
+}
+
+async function init() {
+    if (!nombreJugador) {
+        alert("No se encontró el nombre del jugador.");
+        window.location.href = "index.html";
+        return;
+    }
+
+    crearEscena();
+    configurarSockets();
+    configurarTeclado();
+
+    await cargarJugadorLocalModelo();
+    await cargarEscenarioSeleccionado();
+
+    animate();
+}
+
+init();

@@ -26,3 +26,25 @@ function guardarConfiguracion() {
     localStorage.setItem("configKitchenArena", JSON.stringify(config));
     alert("Configuración guardada correctamente 🔥");
 }
+
+function iniciarJuego(escenario) {
+    const inputNombre = document.getElementById("nombreJugador");
+
+    if (!inputNombre) {
+        alert("No se encontró el campo de nombre.");
+        return;
+    }
+
+    const nombre = inputNombre.value.trim();
+
+    if (!nombre) {
+        alert("Escribe tu nombre antes de iniciar.");
+        inputNombre.focus();
+        return;
+    }
+
+    localStorage.setItem("nombreJugador", nombre);
+    localStorage.setItem("escenarioSeleccionado", escenario);
+
+    window.location.href = "juego.html";
+}

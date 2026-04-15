@@ -15,20 +15,39 @@
 <div class="caja-menu marco-neon">
     <h1 class="titulo-juego">Kitchen Arena</h1>
 
-    <div class="d-grid gap-3 col-12 col-md-6 mx-auto">
-        <a href="juego.html" class="btn btn-lg btn-danger glow">
-            Iniciar Partida
-        </a>
+    <div class="col-12 col-md-8 mx-auto">
+        <input
+            id="nombreJugador"
+            type="text"
+            class="form-control mb-3 input-jugador"
+            placeholder="Escribe tu nombre"
+            maxlength="20"
+        >
+    </div>
 
-        <a href="configuracion.html" class="btn btn-lg btn-warning glow">
+    <div class="d-grid gap-3 col-12 col-md-6 mx-auto">
+        <button class="btn btn-lg btn-danger glow" onclick="iniciarJuego(1)">
+            Escenario 1
+        </button>
+
+        <button class="btn btn-lg btn-warning glow" onclick="iniciarJuego(2)">
+            Escenario 2
+        </button>
+
+        <button class="btn btn-lg btn-info glow" onclick="iniciarJuego(3)">
+            Escenario 3
+        </button>
+
+        <a href="configuracion.html" class="btn btn-lg btn-secondary glow">
             Configuración
         </a>
 
-        <a href="puntuaciones.html" class="btn btn-lg btn-info glow">
+        <a href="puntuaciones.html" class="btn btn-lg btn-light glow">
             Puntuaciones
         </a>
     </div>
 </div>
 
+<script src="js/script.js"></script>
 </body>
 </html>
