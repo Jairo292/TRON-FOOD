@@ -322,6 +322,7 @@ function crearEscena() {
     contenedor = document.querySelector(".campo-juego");
     contenedor.innerHTML = "";
 
+
     scene = new THREE.Scene();
     const colorFondo = FONDO_ESCENARIO[escenarioSeleccionado] ?? 0x1a1a1a;
     scene.background = new THREE.Color(colorFondo);
