@@ -15,9 +15,20 @@ let jugadorLocal = null;
 let jugadorBaseY = 0.5;
 const clock = new THREE.Clock();
 const modelosFlotantes = [];
+const RENDER_CONFIG = {
+    pixelRatioMax: 1.25
+};
+const RED_CONFIG = {
+    intervaloEmisionPosicionMs: 50
+};
 const FLOTACION_JUGADOR = {
     amplitud: 0.12,
     velocidad: 2.0
+};
+const FONDO_ESCENARIO = {
+    "1": 0x1f2432,
+    "2": 0x203025,
+    "3": 0x2f1f29
 };
 const ANIMACION_WALK_LATERAL = {
     inclinacionMax: 0.35,
@@ -32,9 +43,18 @@ const CAMARA_JUGADOR = {
     suavizado: 0.12,
     alturaMirada: 0.4
 };
+const ANIMACION_ENEMIGO = {
+    amplitudFlotacion: 0.2,
+    velocidadFlotacion: 2.8,
+    inclinacionMax: 0.6,
+    oscilacionYaw: 0.2,
+    velocidadWobble: 18,
+    suavizadoInclinacion: 0.28
+};
 let inclinacionLateralActual = 0;
 const objetivoCamaraPos = new THREE.Vector3();
 const objetivoCamaraLookAt = new THREE.Vector3();
+let ultimaEmisionPosicion = 0;
 
 // jugadores remotos
 const jugadoresRemotos = {};
@@ -67,9 +87,9 @@ function aplicarColorModelo(modelo, colorHex) {
 async function obtenerPlantillaJugadorRemoto() {
     if (!plantillaJugadorRemotoPromise) {
         plantillaJugadorRemotoPromise = cargarModelo3D(
-            "./models/tenedor",
-            "tenedor-remoto-plantilla",
-            new THREE.Vector3(3, 3, 3)
+            "./models/cuchara",
+            "cuchara-remoto-plantilla",
+            new THREE.Vector3(2, 2, 2)
         )
             .then((modelo) => {
                 modelo.rotation.x = -Math.PI / 2;
@@ -115,6 +135,11 @@ function registrarModeloFlotante(modelo, options = {}) {
 
 function animarModelosFlotantes(tiempo) {
     for (const item of modelosFlotantes) {
+        if (camera) {
+            const distancia2 = item.modelo.position.distanceToSquared(camera.position);
+            if (distancia2 > 2500) continue;
+        }
+
         // Mantiene X/Z fijos y solo oscila en Y para evitar invadir otros espacios.
         item.modelo.position.y = item.baseY + Math.sin(tiempo * item.velocidad + item.fase) * item.amplitud;
         item.modelo.rotation.y += item.rotacionY * 0.01;
@@ -148,6 +173,58 @@ function animarWalkLateralJugador(tiempo) {
     jugadorLocal.rotation.x = -Math.PI / 2;
     jugadorLocal.rotation.y = wobble;
     jugadorLocal.rotation.z = inclinacionLateralActual;
+}
+
+function inicializarAnimacionEnemigo(mesh, posicionInicial) {
+    mesh.userData.animacionEnemigo = {
+        baseY: posicionInicial.y,
+        inclinacionActual: 0,
+        direccionLateral: 0,
+        ultimoX: posicionInicial.x,
+        ultimoZ: posicionInicial.z,
+        fase: Math.random() * Math.PI * 2
+    };
+}
+
+function animarJugadoresRemotos(tiempo) {
+    for (const id in jugadoresRemotos) {
+        const mesh = jugadoresRemotos[id];
+        const data = mesh.userData.animacionEnemigo;
+        if (!data) continue;
+
+        const dx = mesh.position.x - data.ultimoX;
+        const dz = mesh.position.z - data.ultimoZ;
+        const velocidad = Math.hypot(dx, dz);
+
+        if (data.objetivoX !== undefined && data.objetivoZ !== undefined) {
+            mesh.position.x += (data.objetivoX - mesh.position.x) * 0.25;
+            mesh.position.z += (data.objetivoZ - mesh.position.z) * 0.25;
+        }
+
+        if (velocidad > 0.001) {
+            const lateral = Math.abs(dx) >= Math.abs(dz)
+                ? Math.sign(dx)
+                : 0;
+            data.direccionLateral = lateral;
+            data.ultimoX = mesh.position.x;
+            data.ultimoZ = mesh.position.z;
+        } else {
+            data.direccionLateral *= 0.92;
+        }
+
+        const objetivoInclinacion = data.direccionLateral * ANIMACION_ENEMIGO.inclinacionMax;
+        data.inclinacionActual += (objetivoInclinacion - data.inclinacionActual) * ANIMACION_ENEMIGO.suavizadoInclinacion;
+
+        const wobble = Math.sin(tiempo * ANIMACION_ENEMIGO.velocidadWobble + data.fase)
+            * ANIMACION_ENEMIGO.oscilacionYaw
+            * data.direccionLateral;
+
+        mesh.position.y = data.baseY + Math.sin(tiempo * ANIMACION_ENEMIGO.velocidadFlotacion + data.fase)
+            * ANIMACION_ENEMIGO.amplitudFlotacion;
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.rotation.y = wobble;
+        mesh.rotation.z = data.inclinacionActual;
+    }
 }
 
 function actualizarCamaraJugadorLocal() {
@@ -208,6 +285,7 @@ function actualizarJugadoresRemotos(lista) {
 
                     const posicion = posicionesPendientesRemotos[jugador.id];
                     modeloRemoto.position.set(posicion.x, posicion.y, posicion.z);
+                    inicializarAnimacionEnemigo(modeloRemoto, posicion);
 
                     if (!jugadoresRemotos[jugador.id]) {
                         jugadoresRemotos[jugador.id] = modeloRemoto;
@@ -220,7 +298,14 @@ function actualizarJugadoresRemotos(lista) {
         }
 
         if (jugadoresRemotos[jugador.id]) {
-            jugadoresRemotos[jugador.id].position.set(jugador.x, jugador.y, jugador.z);
+            const data = jugadoresRemotos[jugador.id].userData.animacionEnemigo;
+            if (data) {
+                data.objetivoX = jugador.x;
+                data.objetivoZ = jugador.z;
+                data.baseY = jugador.y;
+            } else {
+                jugadoresRemotos[jugador.id].position.set(jugador.x, jugador.y, jugador.z);
+            }
         }
     }
 
@@ -238,7 +323,8 @@ function crearEscena() {
     contenedor.innerHTML = "";
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a1a);
+    const colorFondo = FONDO_ESCENARIO[escenarioSeleccionado] ?? 0x1a1a1a;
+    scene.background = new THREE.Color(colorFondo);
 
     camera = new THREE.PerspectiveCamera(
         60,
@@ -250,9 +336,9 @@ function crearEscena() {
     camera.position.set(0, 8, 12);
     camera.lookAt(0, 0, 0);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(contenedor.clientWidth, contenedor.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, RENDER_CONFIG.pixelRatioMax));
     contenedor.appendChild(renderer.domElement);
 
     ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
@@ -267,10 +353,10 @@ const texturaPiso = textureLoader.load("./mesa.png");
 
 texturaPiso.wrapS = THREE.RepeatWrapping;
 texturaPiso.wrapT = THREE.RepeatWrapping;
-texturaPiso.repeat.set(6, 6);
+texturaPiso.repeat.set(20, 20);
 
 piso = new THREE.Mesh(
-    new THREE.PlaneGeometry(20, 20),
+    new THREE.PlaneGeometry(72, 72),
     new THREE.MeshStandardMaterial({ map: texturaPiso })
 );
 
@@ -499,6 +585,8 @@ function configurarTeclado() {
 }
 
 function moverJugador() {
+    if (!jugadorLocal) return;
+
     const velocidad = 0.08;
     let seMovio = false;
 
@@ -519,12 +607,153 @@ function moverJugador() {
         seMovio = true;
     }
 
-    if (seMovio && conectado) {
+    const ahora = performance.now();
+    if (seMovio && conectado && (ahora - ultimaEmisionPosicion >= RED_CONFIG.intervaloEmisionPosicionMs)) {
+        ultimaEmisionPosicion = ahora;
         socket.emit("Posicion", {
             x: jugadorLocal.position.x,
             y: jugadorLocal.position.y,
             z: jugadorLocal.position.z
         });
+    }
+}
+
+const DEFINICIONES_MODELOS_ESCENARIO = [
+    {
+        path: "./models/algodon",
+        nombreBase: "algodon",
+        escala: new THREE.Vector3(0.15, 0.15, 0.15),
+        radio: 2.8,
+        flotante: { amplitud: 0.22, velocidad: 1.4, rotacionY: 0.45 }
+    },
+    {
+        path: "./models/catsup",
+        nombreBase: "catsup",
+        escala: new THREE.Vector3(0.6, 0.6, 0.6),
+        radio: 3.6
+    },
+    {
+        path: "./models/florero",
+        nombreBase: "florero",
+        escala: new THREE.Vector3(6, 6, 6),
+        radio: 5.2,
+        rotacionYInicial: Math.PI / 2
+    },
+    {
+        path: "./models/limonada",
+        nombreBase: "limonada",
+        escala: new THREE.Vector3(0.15, 0.15, 0.15),
+        radio: 2.8,
+        flotante: { amplitud: 0.2, velocidad: 1.15, rotacionY: 0.35 }
+    },
+    {
+        path: "./models/saleros",
+        nombreBase: "saleros",
+        escala: new THREE.Vector3(20, 20, 20),
+        radio: 7.5,
+        rotacionYInicial: Math.PI / 2
+    },
+    {
+        path: "./models/salsa",
+        nombreBase: "salsa-a",
+        escala: new THREE.Vector3(0.15, 0.15, 0.15),
+        radio: 2.8,
+        flotante: { amplitud: 0.18, velocidad: 1.2, rotacionY: 0.5 }
+    },
+    {
+        path: "./models/salsa",
+        nombreBase: "salsa-b",
+        escala: new THREE.Vector3(0.15, 0.15, 0.15),
+        radio: 2.8,
+        flotante: { amplitud: 0.18, velocidad: 1.3, rotacionY: 0.45 }
+    },
+    {
+        path: "./models/taza",
+        nombreBase: "taza",
+        escala: new THREE.Vector3(15, 15, 15),
+        radio: 6.8,
+        rotacionYInicial: Math.PI / 2
+    },
+    {
+        path: "./models/yogurt",
+        nombreBase: "yogurt",
+        escala: new THREE.Vector3(0.15, 0.15, 0.15),
+        radio: 2.8,
+        flotante: { amplitud: 0.2, velocidad: 1.25, rotacionY: 0.42 }
+    }
+];
+
+function crearDefinicionAleatoria() {
+    const base = DEFINICIONES_MODELOS_ESCENARIO[
+        Math.floor(Math.random() * DEFINICIONES_MODELOS_ESCENARIO.length)
+    ];
+
+    return {
+        ...base,
+        nombreBase: `${base.nombreBase}-extra`
+    };
+}
+
+function generarPosicionLibre(ocupadas, radio, rango = 30, radioCentroBloqueado = 5) {
+    const maxIntentos = 200;
+
+    for (let i = 0; i < maxIntentos; i++) {
+        const x = (Math.random() * 2 - 1) * rango;
+        const z = (Math.random() * 2 - 1) * rango;
+
+        // Deja libre la zona central para el spawn del jugador.
+        if (Math.hypot(x, z) < radioCentroBloqueado) continue;
+
+        let hayChoque = false;
+        for (const ocupada of ocupadas) {
+            const distancia = Math.hypot(x - ocupada.x, z - ocupada.z);
+            if (distancia < radio + ocupada.radio + 2.5) {
+                hayChoque = true;
+                break;
+            }
+        }
+
+        if (!hayChoque) {
+            return { x, z };
+        }
+    }
+
+    return null;
+}
+
+async function poblarEscenarioAleatorio(totalModelos) {
+    const definiciones = DEFINICIONES_MODELOS_ESCENARIO.map((item) => ({ ...item }));
+
+    while (definiciones.length < totalModelos) {
+        definiciones.push(crearDefinicionAleatoria());
+    }
+
+    const ocupadas = [];
+
+    for (let i = 0; i < definiciones.length; i++) {
+        const def = definiciones[i];
+        const posicion = generarPosicionLibre(ocupadas, def.radio);
+        if (!posicion) continue;
+
+        const modelo = await cargarModelo3D(
+            def.path,
+            `${def.nombreBase}-${i + 1}`,
+            def.escala
+        );
+
+        modelo.position.set(posicion.x, 0, posicion.z);
+        modelo.rotation.y = def.rotacionYInicial ?? Math.random() * Math.PI * 2;
+        scene.add(modelo);
+
+        if (def.flotante) {
+            registrarModeloFlotante(modelo, def.flotante);
+        } else {
+            // Los props estaticos no requieren recalcular matrices cada frame.
+            modelo.updateMatrix();
+            modelo.matrixAutoUpdate = false;
+        }
+
+        ocupadas.push({ x: posicion.x, z: posicion.z, radio: def.radio });
     }
 }
 
@@ -556,101 +785,22 @@ function animate() {
     animarJugadorLocal(tiempo);
     moverJugador();
     animarWalkLateralJugador(tiempo);
+    animarJugadoresRemotos(tiempo);
     animarModelosFlotantes(tiempo);
     actualizarCamaraJugadorLocal();
     renderer.render(scene, camera);
 }
 
 async function cargarEscenario1() {
-    const algodon = await cargarModelo3D(
-        "./models/algodon",
-        "algodon",
-        new THREE.Vector3(0.15, 0.15, 0.15)
-    );
-    algodon.position.set(3, 0, 0);
-    scene.add(algodon);
-    registrarModeloFlotante(algodon, { amplitud: 0.22, velocidad: 1.4, rotacionY: 0.45 });
-
-      const saleros = await cargarModelo3D(
-            "./models/saleros",
-            "saleros",
-            new THREE.Vector3(20, 20, 20)
-        );
-        saleros.position.set(4, 0, 4);
-        saleros.rotation.y = Math.PI / 2;
-        scene.add(saleros);
-    
-        // florero
-        const florero = await cargarModelo3D(
-            "./models/florero",
-            "florero",
-            new THREE.Vector3(6, 6, 6)
-        );
-        florero.position.set(-7, 0, -3);
-        florero.rotation.y = Math.PI / 2;
-        scene.add(florero);
+    await poblarEscenarioAleatorio(28);
 }
 
 async function cargarEscenario2() {
-    const salsa = await cargarModelo3D(
-        "./models/salsa",
-        "salsa",
-        new THREE.Vector3(0.15, 0.15, 0.15)
-    );
-    salsa.position.set(2, 0, -3);
-    scene.add(salsa);
-    registrarModeloFlotante(salsa, { amplitud: 0.18, velocidad: 1.2, rotacionY: 0.5 });
-
-        const catsup = await cargarModelo3D(
-            "./models/catsup",
-            "catsup",
-            new THREE.Vector3(0.6, 0.6, 0.6)
-        );
-        catsup.position.set(-4, 0, -2);
-        scene.add(catsup);
-
-          const jugo = await cargarModelo3D(
-            "./models/jugo",
-            "jugo",
-            new THREE.Vector3(5, 5, 5)
-        );
-        jugo.position.set(2, 0, -3);
-        jugo.rotation.y = Math.PI / 2;
-        scene.add(jugo);
+    await poblarEscenarioAleatorio(34);
 }
 
 async function cargarEscenario3() {
-    //await cargarEscenario1();
-    //await cargarEscenario2();
-
-    const yogurt = await cargarModelo3D(
-        "./models/yogurt",
-        "yogurt",
-        new THREE.Vector3(0.15, 0.15, 0.15)
-    );
-    yogurt.position.set(-3, 0, 2);
-    scene.add(yogurt);
-    registrarModeloFlotante(yogurt, { amplitud: 0.2, velocidad: 1.25, rotacionY: 0.42 });
-
-      const limonada = await cargarModelo3D(
-            "./models/limonada",
-            "Limonada",
-            new THREE.Vector3(0.15, 0.15, 0.15)
-        );
-        limonada.position.set(-1, 0, 7);
-        limonada.rotation.y = Math.PI / 2;
-        scene.add(limonada);
-        registrarModeloFlotante(limonada, { amplitud: 0.2, velocidad: 1.15, rotacionY: 0.35 });
-
-
-         const taza = await cargarModelo3D(
-            "./models/taza",
-            "taza",
-            new THREE.Vector3(15, 15, 15)
-        );
-        taza.position.set(5, 0, -5);
-        taza.rotation.y = Math.PI / 2;
-        scene.add(taza);
+    await poblarEscenarioAleatorio(40);
 }
 
 async function init() {
