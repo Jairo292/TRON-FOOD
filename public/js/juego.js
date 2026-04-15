@@ -12,9 +12,33 @@ let scene, camera, renderer, contenedor;
 let ambientLight, directionalLight, piso;
 const teclas = {};
 let jugadorLocal = null;
+const clock = new THREE.Clock();
+const modelosFlotantes = [];
 
 // jugadores remotos
 const jugadoresRemotos = {};
+
+function registrarModeloFlotante(modelo, options = {}) {
+    if (!modelo) return;
+
+    const baseY = modelo.position.y;
+    modelosFlotantes.push({
+        modelo,
+        baseY,
+        amplitud: options.amplitud ?? 0.25,
+        velocidad: options.velocidad ?? 1.3,
+        fase: options.fase ?? Math.random() * Math.PI * 2,
+        rotacionY: options.rotacionY ?? 0.6
+    });
+}
+
+function animarModelosFlotantes(tiempo) {
+    for (const item of modelosFlotantes) {
+        // Mantiene X/Z fijos y solo oscila en Y para evitar invadir otros espacios.
+        item.modelo.position.y = item.baseY + Math.sin(tiempo * item.velocidad + item.fase) * item.amplitud;
+        item.modelo.rotation.y += item.rotacionY * 0.01;
+    }
+}
 
 
 
@@ -374,8 +398,10 @@ window.addEventListener("resize", actualizarTamanoRenderer);
 
 function animate() {
     requestAnimationFrame(animate);
+    const tiempo = clock.getElapsedTime();
 
     moverJugador();
+    animarModelosFlotantes(tiempo);
     renderer.render(scene, camera);
 }
 
@@ -387,6 +413,7 @@ async function cargarEscenario1() {
     );
     algodon.position.set(3, 0, 0);
     scene.add(algodon);
+    registrarModeloFlotante(algodon, { amplitud: 0.22, velocidad: 1.4, rotacionY: 0.45 });
 
       const saleros = await cargarModelo3D(
             "./models/saleros",
@@ -416,6 +443,7 @@ async function cargarEscenario2() {
     );
     salsa.position.set(2, 0, -3);
     scene.add(salsa);
+    registrarModeloFlotante(salsa, { amplitud: 0.18, velocidad: 1.2, rotacionY: 0.5 });
 
         const catsup = await cargarModelo3D(
             "./models/catsup",
@@ -446,6 +474,7 @@ async function cargarEscenario3() {
     );
     yogurt.position.set(-3, 0, 2);
     scene.add(yogurt);
+    registrarModeloFlotante(yogurt, { amplitud: 0.2, velocidad: 1.25, rotacionY: 0.42 });
 
       const limonada = await cargarModelo3D(
             "./models/limonada",
@@ -455,6 +484,7 @@ async function cargarEscenario3() {
         limonada.position.set(-1, 0, 7);
         limonada.rotation.y = Math.PI / 2;
         scene.add(limonada);
+        registrarModeloFlotante(limonada, { amplitud: 0.2, velocidad: 1.15, rotacionY: 0.35 });
 
 
          const taza = await cargarModelo3D(
