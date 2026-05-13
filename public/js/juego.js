@@ -247,7 +247,27 @@ function actualizarCamaraJugadorLocal() {
     camera.lookAt(objetivoCamaraLookAt);
 }
 
+function Colisiones(Objeto) {
+    if(!jugadorLocal) return;
 
+if (jugadorLocal.intersectsObject(Objeto)) {
+                console.log("hola!!!!!")
+                //alert("hola!!!!!");
+            } else {
+                //
+ 
+            }
+
+   /* const radioJugador = 0.5;
+    for (const id in jugadoresRemotos) {
+        const enemigo = jugadoresRemotos[id];
+        const distancia = jugadorLocal.position.distanceTo(enemigo.position);
+        if (distancia < radioJugador) {
+            console.log("¡Colisión con jugador remoto:", id);
+            // Aquí podrías agregar lógica adicional, como reducir la salud del jugador, reproducir un sonido, etc.
+        }
+    }*/
+}
 
 function configurarSockets() {
     socket.on("connect", () => {
@@ -369,8 +389,8 @@ scene.add(piso);
 
 
 manager.onStart = function (url, itemsLoaded, itemsTotal) {
-    console.log("Started loading file:", url);
-    console.log("Loaded", itemsLoaded, "of", itemsTotal, "files.");
+    //console.log("Started loading file:", url);
+    //console.log("Loaded", itemsLoaded, "of", itemsTotal, "files.");
 };
 
 manager.onLoad = function () {
@@ -378,8 +398,8 @@ manager.onLoad = function () {
 };
 
 manager.onProgress = function (url, itemsLoaded, itemsTotal) {
-    console.log("Loading file:", url);
-    console.log("Loaded", itemsLoaded, "of", itemsTotal, "files.");
+    //console.log("Loading file:", url);
+    //console.log("Loaded", itemsLoaded, "of", itemsTotal, "files.");
 };
 
 manager.onError = function (url) {
@@ -814,6 +834,8 @@ async function init() {
     crearEscena();
     configurarSockets();
     configurarTeclado();
+    Colisiones();
+    
 
     await cargarJugadorLocalModelo();
     await cargarEscenarioSeleccionado();
