@@ -8,33 +8,49 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 <link href="style.css" rel="stylesheet">
+
 </head>
 
 <body>
 
 <div class="caja-menu marco-neon">
-    <h1 class="titulo-juego">Kitchen Arenaa</h1>
 
-    <div class="col-12 col-md-8 mx-auto">
-        <input
-            id="nombreJugador"
-            type="text"
-            class="form-control mb-3 input-jugador"
-            placeholder="Escribe tu nombre"
-            maxlength="20"
+    <h1 class="titulo-juego">Kitchen Arena</h1>
+
+    <!-- BOTONES LOGIN / REGISTRO -->
+    <div class="d-flex justify-content-center gap-3 mb-4">
+
+        <button
+            class="btn btn-outline-light glow"
+            data-bs-toggle="modal"
+            data-bs-target="#loginModal"
         >
+            Login
+        </button>
+
+        <button
+            class="btn btn-outline-warning glow"
+            data-bs-toggle="modal"
+            data-bs-target="#registroModal"
+        >
+            Registro
+        </button>
+
     </div>
 
+
+    <!-- BOTONES DEL JUEGO -->
     <div class="d-grid gap-3 col-12 col-md-6 mx-auto">
-        <button class="btn btn-lg btn-danger glow" onclick="iniciarJuego(1)">
+
+        <button class="btn btn-lg btn-danger glow" onclick="entrarJuego(1)">
             Escenario 1
         </button>
 
-        <button class="btn btn-lg btn-warning glow" onclick="iniciarJuego(2)">
+        <button class="btn btn-lg btn-warning glow" onclick="entrarJuego(2)">
             Escenario 2
         </button>
 
-        <button class="btn btn-lg btn-info glow" onclick="iniciarJuego(3)">
+        <button class="btn btn-lg btn-info glow" onclick="entrarJuego(3)">
             Escenario 3
         </button>
 
@@ -45,9 +61,125 @@
         <a href="puntuaciones.html" class="btn btn-lg btn-light glow">
             Puntuaciones
         </a>
+
     </div>
+
 </div>
 
+<!-- MODAL LOGIN -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content modal-neon">
+
+            <div class="modal-header border-0">
+
+                <h3 class="modal-title text-white">
+                    Iniciar Sesión
+                </h3>
+
+                <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <input
+                    id="correoLogin"
+                    type="email"
+                    class="form-control mb-3 input-jugador"
+                    placeholder="Correo"
+                >
+
+                <input
+                    id="passwordLogin"
+                    type="password"
+                    class="form-control mb-3 input-jugador"
+                    placeholder="Contraseña"
+                >
+
+                <button
+                    class="btn btn-success glow w-100"
+                    onclick="login()"
+                >
+                    Entrar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MODAL REGISTRO -->
+<div class="modal fade" id="registroModal" tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content modal-neon">
+
+            <div class="modal-header border-0">
+
+                <h3 class="modal-title text-white">
+                    Registro
+                </h3>
+
+                <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <input
+                    id="usuarioRegistro"
+                    type="text"
+                    class="form-control mb-3 input-jugador"
+                    placeholder="Usuario"
+                    maxlength="20"
+                >
+
+                <input
+                    id="correoRegistro"
+                    type="email"
+                    class="form-control mb-3 input-jugador"
+                    placeholder="Correo"
+                >
+
+                <input
+                    id="passwordRegistro"
+                    type="password"
+                    class="form-control mb-3 input-jugador"
+                    placeholder="Contraseña"
+                >
+
+                <button
+                    class="btn btn-warning glow w-100"
+                    onclick="registrar()"
+                >
+                    Registrarse
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/script.js"></script>
+
 </body>
 </html>

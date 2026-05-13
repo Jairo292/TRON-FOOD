@@ -10,9 +10,11 @@ body {
     background-size: cover;
     background-attachment: fixed;
     color: white;
+
     display: flex;
     justify-content: center;
     align-items: center;
+
     position: relative;
 }
 
@@ -20,95 +22,209 @@ body::before {
     content: "";
     position: absolute;
     inset: 0;
+
     background: rgba(0,0,0,0.6);
+
     z-index: -1;
 }
+
+/* CONTENEDOR PRINCIPAL */
 
 .caja-menu {
     text-align: center;
 }
 
+/* TITULO */
+
 .titulo-juego {
+
     font-family: 'Orbitron', sans-serif;
     font-weight: 800;
+
     font-size: 4rem;
+
     letter-spacing: 4px;
     text-transform: uppercase;
+
     text-shadow: 0 0 20px rgba(255,87,34,0.9);
+
     margin-bottom: 40px;
 }
 
+/* BOTONES */
+
 .glow {
+
     border-radius: 12px;
+
     font-weight: 600;
     letter-spacing: 1px;
+
     box-shadow: 0 0 15px rgba(255,87,34,0.6);
+
     transition: all 0.3s ease;
 }
 
 .glow:hover {
+
     transform: scale(1.08);
+
     box-shadow: 0 0 30px rgba(255,87,34,1);
 }
 
+/* RESPONSIVE */
+
 @media (max-width: 768px) {
+
     .titulo-juego {
         font-size: 2.5rem;
     }
+
+    .marco-neon {
+        width: 90%;
+        padding: 40px 25px;
+    }
+
 }
+
+/* MARCO NEON */
+
 .marco-neon {
+
     position: relative;
+
     padding: 60px 50px;
+
     border-radius: 20px;
 }
 
 .marco-neon::before {
+
     content: "";
+
     position: absolute;
     inset: 0;
+
     border-radius: 20px;
-    padding: 2px; 
+
+    padding: 2px;
 
     background: linear-gradient(
         45deg,
-        #ff0080,   
-        #ccff00, 
-        #ff0000,  
-        #00bfff, 
+        #ff0080,
+        #ccff00,
+        #ff0000,
+        #00bfff,
         #ff0080
     );
 
     background-size: 400% 400%;
+
     animation: neonFlow 8s linear infinite;
 
     -webkit-mask:
         linear-gradient(#000 0 0) content-box,
         linear-gradient(#000 0 0);
+
     -webkit-mask-composite: xor;
+
     mask-composite: exclude;
 
     filter: blur(20px);
+
     pointer-events: none;
 }
 
+/* ANIMACION */
+
 @keyframes neonFlow {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+
 }
 
+/* INPUTS */
+
 .input-jugador {
+
     border-radius: 12px;
+
     font-size: 1.1rem;
     font-weight: 600;
+
     text-align: center;
+
     box-shadow: 0 0 15px rgba(255,87,34,0.35);
+
     border: 2px solid rgba(255,255,255,0.15);
+
     background: rgba(255,255,255,0.95);
 }
 
 .input-jugador:focus {
+
     box-shadow: 0 0 20px rgba(255,87,34,0.65);
+
     border-color: rgba(255,87,34,0.8);
 }
 
+/* MODALES */
+
+.modal-neon {
+
+    background: rgba(15,15,25,0.95);
+
+    border: 2px solid rgba(255,87,34,0.5);
+
+    border-radius: 20px;
+
+    box-shadow: 0 0 30px rgba(255,87,34,0.45);
+
+    backdrop-filter: blur(12px);
+
+    color: white;
+}
+
+.modal-header {
+    border-bottom: none;
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+.modal-title {
+
+    font-family: 'Orbitron', sans-serif;
+
+    letter-spacing: 1px;
+}
+
+/* BOTONES LOGIN / REGISTRO */
+
+.btn-outline-light,
+.btn-outline-warning {
+
+    min-width: 120px;
+}
+
+/* SCROLL SI LA PANTALLA ES MUY PEQUEÑA */
+
+@media (max-height: 800px) {
+
+    body {
+        overflow-y: auto;
+        padding: 20px 0;
+    }
+
+}

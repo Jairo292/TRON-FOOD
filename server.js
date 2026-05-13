@@ -1,15 +1,157 @@
+const mysql = require("mysql2");
+const bcrypt = require("bcrypt");
+const cors = require("cors");
 const path = require("node:path");
 const http = require("node:http");
 const express = require("express");
 const { Server } = require("socket.io");
 
 const app = express();
+app.use(cors());
+app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, "public")));
+const db = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: "root",
+  database: "kitchenarena"
+});
+
+db.connect((err) => {
+
+  if (err) {
+    console.log("Error MySQL");
+    console.log(err);
+  } else {
+    console.log("MySQL conectado");
+  }
+
+});
 
 const jugadores = [];
+
+app.post("/registro", async (req, res) => {
+
+  const { usuario, correo, password } = req.body;
+
+  try {
+
+    const hash = await bcrypt.hash(password, 10);
+
+    const sql = `
+      INSERT INTO usuarios (usuario, correo, password)
+      VALUES (?, ?, ?)
+    `;
+
+    db.query(sql, [usuario, correo, hash], (err, result) => {
+
+      if (err) {
+        console.log(err);
+
+        return res.status(500).json({
+          mensaje: "Error al registrar"
+        });
+      }
+
+      res.json({
+        mensaje: "Usuario registrado"
+      });
+
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      mensaje: "Error del servidor"
+    });
+
+  }
+
+});
+
+app.post("/login", (req, res) => {
+
+  const { correo, password } = req.body;
+
+  const sql = `
+    SELECT * FROM usuarios
+    WHERE correo = ?
+  `;
+
+  db.query(sql, [correo], async (err, result) => {
+
+    if (err) {
+
+      return res.status(500).json({
+        mensaje: "Error del servidor"
+      });
+
+    }
+
+    if (result.length === 0) {
+
+      return res.status(401).json({
+        mensaje: "Usuario no encontrado"
+      });
+
+    }
+
+    const usuario = result[0];
+
+    const passwordCorrecta = await bcrypt.compare(
+      password,
+      usuario.password
+    );
+
+    if (!passwordCorrecta) {
+
+      return res.status(401).json({
+        mensaje: "Contraseña incorrecta"
+      });
+
+    }
+
+    res.json({
+
+      mensaje: "Login exitoso",
+
+      id: usuario.id,
+
+      usuario: usuario.usuario
+
+    });
+
+  });
+
+});
+
+app.get("/ranking", (req, res) => {
+
+  const sql = `
+    SELECT usuario, puntaje_max
+    FROM usuarios
+    ORDER BY puntaje_max DESC
+    LIMIT 5
+  `;
+
+  db.query(sql, (err, result) => {
+
+    if (err) {
+      console.log(err);
+
+      return res.status(500).json({
+        mensaje: "Error al obtener ranking"
+      });
+    }
+
+    res.json(result);
+
+  });
+
+});
 
 io.on("connection", (socket) => {
   console.log("Usuario conectado:", socket.id);

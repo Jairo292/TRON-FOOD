@@ -48,3 +48,117 @@ function iniciarJuego(escenario) {
 
     window.location.href = "juego.html";
 }
+
+async function registrar() {
+
+    const usuario = document.getElementById("usuarioRegistro").value;
+    const correo = document.getElementById("correoRegistro").value;
+    const password = document.getElementById("passwordRegistro").value;
+
+    if (!usuario || !correo || !password) {
+
+        alert("Completa todos los campos");
+        return;
+
+    }
+
+    try {
+
+        const respuesta = await fetch("/registro", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                usuario,
+                correo,
+                password
+            })
+
+        });
+
+        const data = await respuesta.json();
+
+        alert(data.mensaje);
+
+    } catch (error) {
+
+        console.log(error);
+
+        alert("Error al conectar con el servidor");
+
+    }
+
+}
+
+async function login() {
+
+    const correo = document.getElementById("correoLogin").value;
+    const password = document.getElementById("passwordLogin").value;
+
+    if (!correo || !password) {
+
+        alert("Completa todos los campos");
+        return;
+
+    }
+
+    try {
+
+        const respuesta = await fetch("/login", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                correo,
+                password
+            })
+
+        });
+
+        const data = await respuesta.json();
+
+        if (respuesta.ok) {
+
+            alert("Bienvenido " + data.usuario);
+
+            localStorage.setItem("usuario", data.usuario);
+            localStorage.setItem("idUsuario", data.id);
+
+        } else {
+
+            alert(data.mensaje);
+
+        }
+
+    } catch (error) {
+
+        console.log(error);
+
+        alert("Error al conectar con el servidor");
+
+    }
+
+}
+
+function entrarJuego(escenario) {
+
+    const usuario = localStorage.getItem("usuario");
+
+    if (!usuario) {
+        alert("Primero inicia sesión.");
+        return;
+    }
+
+    localStorage.setItem("nombreJugador", usuario);
+    localStorage.setItem("escenarioSeleccionado", escenario);
+
+    window.location.href = "juego.html";
+}
