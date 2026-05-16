@@ -162,3 +162,85 @@ function entrarJuego(escenario) {
 
     window.location.href = "juego.html";
 }
+
+// --- Facebook Login helpers ---
+async function fbLogin() {
+    if (!window.FB) {
+        alert('Facebook SDK no cargado. Asegúrate de configurar tu App ID en index.html');
+        return;
+    }
+
+    FB.getLoginStatus(function(response) {
+        if (response.status === 'connected') {
+            handleFBResponse(response);
+        } else {
+            FB.login(function(resp) {
+                if (resp.authResponse) handleFBResponse(resp);
+                else alert('Inicio de sesión cancelado');
+            }, {scope: 'public_profile'});
+        }
+    });
+}
+
+function handleFBResponse(resp) {
+    FB.api('/me', {fields: 'name'}, async function(profile) {
+        if (!profile || profile.error) {
+            console.log(profile && profile.error);
+            alert('No se pudo obtener datos de Facebook');
+            return;
+        }
+
+        const usuario = profile.name || 'FBUser';
+        const correo = profile.email || (profile.id + '@facebook.local');
+        const password = generateRandomPassword();
+
+        try {
+            // Intenta registrar (si ya existe, la API puede devolver error y procederemos a login)
+            await fetch('/registro', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({usuario, correo, password})
+            });
+        } catch (e) {
+            console.log('registro fb error', e);
+        }
+
+        try {
+            const loginRes = await fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({correo, password})
+            });
+
+            const data = await loginRes.json();
+
+            if (loginRes.ok) {
+                alert('Bienvenido ' + data.usuario);
+                localStorage.setItem('usuario', data.usuario);
+                localStorage.setItem('idUsuario', data.id);
+                // Cerrar modal si está abierto
+                try {
+                    const modalEl = document.getElementById('loginModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                } catch (e) {}
+            } else {
+                alert(data.mensaje || 'Error en login con Facebook');
+            }
+
+        } catch (e) {
+            console.log(e);
+            alert('Error al iniciar con Facebook');
+        }
+    });
+}
+
+function generateRandomPassword() {
+    try {
+        const arr = new Uint8Array(16);
+        crypto.getRandomValues(arr);
+        return Array.from(arr).map(n => (n % 36).toString(36)).join('') + Date.now().toString(36);
+    } catch (e) {
+        return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    }
+}

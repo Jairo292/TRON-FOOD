@@ -9,12 +9,20 @@ let conectado = false;
 const manager = new THREE.LoadingManager();
 
 let scene, camera, renderer, contenedor;
-let ambientLight, directionalLight, piso;
+let ambientLight, directionalLight, spotLight, piso;
 const teclas = {};
 let jugadorLocal = null;
 let jugadorBaseY = 0.5;
 const clock = new THREE.Clock();
+const LIMITE_ESCENARIO = 32;
 const modelosFlotantes = [];
+let aiAgent = null;
+const AI_CONFIG = {
+    detectionRadius: 12,
+    fov: Math.PI / 3, // 60 grados (actualmente no usada)
+    speed: 0.06,
+    wanderSpeed: 0.015
+};
 const RENDER_CONFIG = {
     pixelRatioMax: 1.25
 };
@@ -247,28 +255,6 @@ function actualizarCamaraJugadorLocal() {
     camera.lookAt(objetivoCamaraLookAt);
 }
 
-function Colisiones(Objeto) {
-    if(!jugadorLocal) return;
-
-if (jugadorLocal.intersectsObject(Objeto)) {
-                console.log("hola!!!!!")
-                //alert("hola!!!!!");
-            } else {
-                //
- 
-            }
-
-   /* const radioJugador = 0.5;
-    for (const id in jugadoresRemotos) {
-        const enemigo = jugadoresRemotos[id];
-        const distancia = jugadorLocal.position.distanceTo(enemigo.position);
-        if (distancia < radioJugador) {
-            console.log("¡Colisión con jugador remoto:", id);
-            // Aquí podrías agregar lógica adicional, como reducir la salud del jugador, reproducir un sonido, etc.
-        }
-    }*/
-}
-
 function configurarSockets() {
     socket.on("connect", () => {
         console.log("Conectado al servidor");
@@ -330,11 +316,73 @@ function actualizarJugadoresRemotos(lista) {
     }
 
     for (const id in jugadoresRemotos) {
-        if (!idsActivos.includes(id)) {
+        // No eliminar la IA local creada en cliente
+        if (!idsActivos.includes(id) && !(aiAgent && aiAgent.id === id)) {
             scene.remove(jugadoresRemotos[id]);
             delete jugadoresRemotos[id];
             delete posicionesPendientesRemotos[id];
         }
+    }
+}
+
+// --- IA (simple) ---
+async function spawnAI() {
+    if (aiAgent) return;
+    try {
+        // Cargar específicamente el modelo del tenedor para la IA
+        const modeloIA = await cargarModelo3D("./models/tenedor", "ia-tenedor", new THREE.Vector3(2,2,2));
+        // Aplicar color rojo para diferenciar
+        aplicarColorModelo(modeloIA, 0xff4d6d);
+        // Posicionar IA en un lugar aleatorio lejos del jugador
+        const x = (Math.random() * 2 - 1) * 20;
+        const z = (Math.random() * 2 - 1) * 20;
+        modeloIA.position.set(x, jugadorBaseY, z);
+        modeloIA.rotation.x = -Math.PI / 2;
+        modeloIA.name = 'IA';
+        inicializarAnimacionEnemigo(modeloIA, { x, y: jugadorBaseY, z });
+        aiAgent = {
+            id: 'IA',
+            mesh: modeloIA,
+            objetivo: null,
+            wanderTarget: null
+        };
+        jugadoresRemotos[aiAgent.id] = modeloIA;
+        modeloIA.traverse((child) => { if (child.isMesh) child.castShadow = true; });
+        scene.add(modeloIA);
+        console.log('IA (tenedor rojo) generada en', x, z);
+    } catch (e) {
+        console.error('No se pudo crear IA:', e);
+    }
+}
+
+function updateAI(tiempo) {
+    if (!aiAgent || !jugadorLocal) return;
+    const ia = aiAgent.mesh;
+    // Distancia al jugador
+    const distancia = ia.position.distanceTo(jugadorLocal.position);
+
+    // Direccion hacia jugador
+    const dir = new THREE.Vector3().subVectors(jugadorLocal.position, ia.position).setY(0).normalize();
+
+    if (distancia <= AI_CONFIG.detectionRadius) {
+        // Perseguir al jugador (por proximidad)
+        ia.position.x += dir.x * AI_CONFIG.speed;
+        ia.position.z += dir.z * AI_CONFIG.speed;
+        // rotar IA hacia jugador
+        ia.lookAt(jugadorLocal.position.x, ia.position.y, jugadorLocal.position.z);
+    } else {
+        // Wander aleatorio
+        if (!aiAgent.wanderTarget || ia.position.distanceTo(aiAgent.wanderTarget) < 1) {
+            aiAgent.wanderTarget = new THREE.Vector3(
+                ia.position.x + (Math.random() * 2 - 1) * 6,
+                ia.position.y,
+                ia.position.z + (Math.random() * 2 - 1) * 6
+            );
+        }
+        const dirW = new THREE.Vector3().subVectors(aiAgent.wanderTarget, ia.position).setY(0).normalize();
+        ia.position.x += dirW.x * AI_CONFIG.wanderSpeed;
+        ia.position.z += dirW.z * AI_CONFIG.wanderSpeed;
+        ia.lookAt(aiAgent.wanderTarget.x, ia.position.y, aiAgent.wanderTarget.z);
     }
 }
 
@@ -360,14 +408,26 @@ function crearEscena() {
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(contenedor.clientWidth, contenedor.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, RENDER_CONFIG.pixelRatioMax));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     contenedor.appendChild(renderer.domElement);
 
-    ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+    ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
 
-    directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+    directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
     directionalLight.position.set(5, 10, 7);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.set(1024, 1024);
     scene.add(directionalLight);
+
+    spotLight = new THREE.SpotLight(0xfff2c0, 1.5, 90, Math.PI / 6, 0.18, 1);
+    spotLight.position.set(0, 20, 15);
+    spotLight.target.position.set(0, 0, 0);
+    spotLight.castShadow = true;
+    spotLight.shadow.mapSize.set(1024, 1024);
+    scene.add(spotLight);
+    scene.add(spotLight.target);
 
     const textureLoader = new THREE.TextureLoader();
 const texturaPiso = textureLoader.load("./mesa.png");
@@ -382,6 +442,7 @@ piso = new THREE.Mesh(
 );
 
 piso.rotation.x = -Math.PI / 2;
+piso.receiveShadow = true;
 scene.add(piso);
     window.addEventListener("resize", actualizarTamanoRenderer);
     actualizarTamanoRenderer();
@@ -456,6 +517,7 @@ async function cargarJugadorLocalModelo() {
             new THREE.MeshStandardMaterial({ color: 0x00ffcc })
         );
         jugadorLocal.position.set(0, 0.5, 0);
+        jugadorLocal.castShadow = true;
         scene.add(jugadorLocal);
 
         const modelo = await cargarModelo3D(
@@ -471,6 +533,9 @@ async function cargarJugadorLocalModelo() {
 
         scene.remove(jugadorLocal);
         jugadorLocal = modelo;
+        jugadorLocal.traverse((child) => {
+            if (child.isMesh) child.castShadow = true;
+        });
         scene.add(jugadorLocal);
 
         console.log("Modelo local cargado correctamente");
@@ -609,33 +674,43 @@ function moverJugador() {
     if (!jugadorLocal) return;
 
     const velocidad = 0.08;
+    const desplazamiento = new THREE.Vector3();
     let seMovio = false;
 
     if (teclas["w"]) {
-        jugadorLocal.position.z -= velocidad;
+        desplazamiento.z -= velocidad;
         seMovio = true;
     }
     if (teclas["s"]) {
-        jugadorLocal.position.z += velocidad;
+        desplazamiento.z += velocidad;
         seMovio = true;
     }
     if (teclas["a"]) {
-        jugadorLocal.position.x -= velocidad;
+        desplazamiento.x -= velocidad;
         seMovio = true;
     }
     if (teclas["d"]) {
-        jugadorLocal.position.x += velocidad;
+        desplazamiento.x += velocidad;
         seMovio = true;
     }
 
-    const ahora = performance.now();
-    if (seMovio && conectado && (ahora - ultimaEmisionPosicion >= RED_CONFIG.intervaloEmisionPosicionMs)) {
-        ultimaEmisionPosicion = ahora;
-        socket.emit("Posicion", {
-            x: jugadorLocal.position.x,
-            y: jugadorLocal.position.y,
-            z: jugadorLocal.position.z
-        });
+    if (!seMovio) return;
+
+    const posicionPropuesta = jugadorLocal.position.clone().add(desplazamiento);
+    const dentroDeLimites = Math.abs(posicionPropuesta.x) < LIMITE_ESCENARIO && Math.abs(posicionPropuesta.z) < LIMITE_ESCENARIO;
+
+    if (dentroDeLimites) {
+        jugadorLocal.position.copy(posicionPropuesta);
+
+        const ahora = performance.now();
+        if (conectado && (ahora - ultimaEmisionPosicion >= RED_CONFIG.intervaloEmisionPosicionMs)) {
+            ultimaEmisionPosicion = ahora;
+            socket.emit("Posicion", {
+                x: jugadorLocal.position.x,
+                y: jugadorLocal.position.y,
+                z: jugadorLocal.position.z
+            });
+        }
     }
 }
 
@@ -769,7 +844,7 @@ async function poblarEscenarioAleatorio(totalModelos) {
         if (def.flotante) {
             registrarModeloFlotante(modelo, def.flotante);
         } else {
-            // Los props estaticos no requieren recalcular matrices cada frame.
+            // Los props estáticos no requieren recalcular matrices cada frame.
             modelo.updateMatrix();
             modelo.matrixAutoUpdate = false;
         }
@@ -809,6 +884,7 @@ function animate() {
     animarJugadoresRemotos(tiempo);
     animarModelosFlotantes(tiempo);
     actualizarCamaraJugadorLocal();
+    if (aiAgent) updateAI(tiempo);
     renderer.render(scene, camera);
 }
 
@@ -834,11 +910,15 @@ async function init() {
     crearEscena();
     configurarSockets();
     configurarTeclado();
-    Colisiones();
-    
 
     await cargarJugadorLocalModelo();
     await cargarEscenarioSeleccionado();
+
+    // Modo de juego: leer elección de configuración (pvp | pvia)
+    const modo = localStorage.getItem('modoJuego') || 'pvp';
+    if (modo === 'pvia') {
+        await spawnAI();
+    }
 
     animate();
 }

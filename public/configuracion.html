@@ -32,9 +32,9 @@
 
     <div class="mb-4">
         <label class="form-label">Modo de Juego</label>
-        <select class="form-select">
-            <option>1 vs 1 Local</option>
-            <option>Jugador vs IA</option>
+        <select id="modoJuegoSelect" class="form-select">
+            <option value="pvp">1 vs 1 Local</option>
+            <option value="pvia">Jugador vs IA</option>
         </select>
     </div>
 
@@ -47,11 +47,25 @@
     </div>
 
     <div class="d-grid gap-2">
-        <button class="btn btn-success btn-custom">Guardar</button>
+        <button id="guardarConf" class="btn btn-success btn-custom">Guardar</button>
         <a href="index.html" class="btn btn-secondary btn-custom">Volver</a>
     </div>
 
 </div>
 
+<script>
+    // Inicializar selección desde localStorage
+    document.addEventListener('DOMContentLoaded', () => {
+        const sel = document.getElementById('modoJuegoSelect');
+        const saved = localStorage.getItem('modoJuego') || 'pvp';
+        sel.value = saved;
+
+        document.getElementById('guardarConf').addEventListener('click', () => {
+            localStorage.setItem('modoJuego', sel.value);
+            // feedback rápido
+            alert('Configuración guardada');
+        });
+    });
+</script>
 </body>
 </html>

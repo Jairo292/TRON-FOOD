@@ -1,4 +1,4 @@
-const mysql = require("mysql2");
+const sqlite3 = require("sqlite3").verbose();
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const path = require("node:path");
@@ -13,22 +13,28 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, "public")));
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "root",
-  database: "kitchenarena"
-});
 
-db.connect((err) => {
-
+// Conectar a SQLite
+const db = new sqlite3.Database(path.join(__dirname, "kitchenarena.db"), (err) => {
   if (err) {
-    console.log("Error MySQL");
-    console.log(err);
+    console.log("Error SQLite:", err);
   } else {
-    console.log("MySQL conectado");
+    console.log("SQLite conectado");
+    // Crear tabla si no existe
+    db.run(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario TEXT NOT NULL UNIQUE,
+        correo TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        puntaje_max INTEGER DEFAULT 0,
+        fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `, (err) => {
+      if (err) console.log("Error creando tabla:", err);
+      else console.log("Tabla 'usuarios' lista");
+    });
   }
-
 });
 
 const jugadores = [];
@@ -46,7 +52,7 @@ app.post("/registro", async (req, res) => {
       VALUES (?, ?, ?)
     `;
 
-    db.query(sql, [usuario, correo, hash], (err, result) => {
+    db.run(sql, [usuario, correo, hash], (err) => {
 
       if (err) {
         console.log(err);
@@ -81,7 +87,7 @@ app.post("/login", (req, res) => {
     WHERE correo = ?
   `;
 
-  db.query(sql, [correo], async (err, result) => {
+  db.get(sql, [correo], async (err, usuario) => {
 
     if (err) {
 
@@ -91,15 +97,13 @@ app.post("/login", (req, res) => {
 
     }
 
-    if (result.length === 0) {
+    if (!usuario) {
 
       return res.status(401).json({
         mensaje: "Usuario no encontrado"
       });
 
     }
-
-    const usuario = result[0];
 
     const passwordCorrecta = await bcrypt.compare(
       password,
@@ -137,7 +141,7 @@ app.get("/ranking", (req, res) => {
     LIMIT 5
   `;
 
-  db.query(sql, (err, result) => {
+  db.all(sql, (err, result) => {
 
     if (err) {
       console.log(err);
