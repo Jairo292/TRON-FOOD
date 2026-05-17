@@ -7,7 +7,10 @@ import { AgentIA, ESTADO_IA } from "./ia.js";
 const socket = io();
 let nombreJugador = localStorage.getItem("nombreJugador") || "";
 let escenarioSeleccionado = localStorage.getItem("escenarioSeleccionado") || "1";
+let dificultadJuego = localStorage.getItem("dificultadJuego") || "normal";
 let conectado = false;
+let ultimoCambioCaos = performance.now();
+const CAOS_INTERVALO_MS = 10000;
 const manager = new THREE.LoadingManager();
 
 let scene, camera, renderer, contenedor;
@@ -849,6 +852,37 @@ function animate() {
     if (!jugadorMuerto) {
         moverJugador();
         revisarColisionPowerUps();
+        
+        // --- Dificultad: Caos en Cocina ---
+        if (dificultadJuego === "caos") {
+            const ahora = performance.now();
+            if (ahora - ultimoCambioCaos >= CAOS_INTERVALO_MS) {
+                ultimoCambioCaos = ahora;
+                
+                // Cambiar al elemento al que le ganas
+                elementoActual = COMBATE[elementoActual].gana;
+                
+                // Actualizar UI
+                colaElementos.unshift(elementoActual);
+                if (colaElementos.length > 3) colaElementos.pop();
+                actualizarUIElementos();
+                
+                // Efecto de feedback visual
+                const iconoActual = document.getElementById("icono-elemento-actual");
+                if (iconoActual) {
+                    iconoActual.style.transform = 'scale(1.5) rotate(15deg)';
+                    iconoActual.style.transition = 'transform 0.3s ease';
+                    setTimeout(() => iconoActual.style.transform = 'scale(1) rotate(0deg)', 300);
+                }
+                
+                // Notificar al servidor en PVP
+                if (conectado) {
+                    socket.emit("CambiarElemento", { elemento: elementoActual });
+                }
+                
+                console.log("[CAOS] Elemento rotado a:", elementoActual);
+            }
+        }
     }
 
     animarWalkLateralJugador(tiempo);
@@ -1146,6 +1180,7 @@ async function init() {
             _refrescarHUDJugador();
             if (gestorRastros) gestorRastros.limpiarPropietario('jugador');
             if (jugadorLocal) jugadorLocal.position.set(0, jugadorBaseY, 0);
+            ultimoCambioCaos = performance.now();
         });
 
         document.getElementById('btnSiguienteRonda')?.addEventListener('click', () => {
@@ -1163,6 +1198,7 @@ async function init() {
             jugadorMuerto = false;
             _refrescarHUDJugador();
             if (gestorRastros) gestorRastros.limpiarPropietario('jugador');
+            ultimoCambioCaos = performance.now();
         });
 
         actualizarUIElementos();
