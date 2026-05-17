@@ -408,6 +408,7 @@ export class AgentIA {
 
                 // Orientar IA en dirección de movimiento
                 this.mesh.rotation.z = nx * 0.3;  // inclinación lateral visual
+                this.mesh.userData.angulo = Math.atan2(nx, nz);
             }
         } else {
             // Sin ruta: movimiento directo suavizado hacia destino urgente
@@ -420,8 +421,11 @@ export class AgentIA {
             const dz = tz - pos.z;
             const dist = Math.hypot(dx, dz);
             if (dist > 0.1) {
-                pos.x += (dx / dist) * velocidad;
-                pos.z += (dz / dist) * velocidad;
+                const nx = dx / dist;
+                const nz = dz / dist;
+                pos.x += nx * velocidad;
+                pos.z += nz * velocidad;
+                this.mesh.userData.angulo = Math.atan2(nx, nz);
             }
         }
 

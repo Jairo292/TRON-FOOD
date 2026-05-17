@@ -75,6 +75,12 @@ export class GestorRastros {
      * @param {string} propietario  "jugador" | "IA" | socket.id
      * @param {string} elemento     fuego|agua|hielo|aire|normal
      */
+    /**
+     * Crear un nuevo segmento de rastro.
+     * @param {THREE.Vector3} posicion
+     * @param {string} propietario  "jugador" | "IA" | socket.id
+     * @param {string} elemento     fuego|agua|hielo|aire|normal
+     */
     agregar(posicion, propietario, elemento) {
         const ultima = this._ultimaPos[propietario];
         if (ultima && ultima.distanceTo(posicion) < CFG.distanciaMinima) return;
@@ -85,7 +91,7 @@ export class GestorRastros {
             this._eliminarSegmento(0);
         }
 
-        const mat  = obtenerMaterial(elemento).clone();
+        const mat  = obtenerMaterial(elemento); // Material compartido (sin clonar!)
         const mesh = new THREE.Mesh(GEO_RASTRO, mat);
         mesh.position.set(posicion.x, CFG.alturaRastro, posicion.z);
         mesh.castShadow    = false;
@@ -95,9 +101,9 @@ export class GestorRastros {
         this.scene.add(mesh);
 
         const expira = performance.now() + CFG.vidaRastroMs;
-        this.segmentos.push({ mesh, propietario, elemento, expira, mat });
+        this.segmentos.push({ mesh, propietario, elemento, expira });
 
-        setTimeout(() => this._iniciarFade(mesh, mat), CFG.vidaRastroMs - 600);
+        setTimeout(() => this._iniciarFade(mesh), CFG.vidaRastroMs - 600);
         setTimeout(() => this._eliminarPorMesh(mesh),  CFG.vidaRastroMs);
     }
 
@@ -120,7 +126,6 @@ export class GestorRastros {
     limpiarTodo() {
         for (const seg of this.segmentos) {
             this.scene.remove(seg.mesh);
-            seg.mat.dispose();
         }
         this.segmentos.length = 0;
         this._ultimaPos = {};
@@ -152,7 +157,7 @@ export class GestorRastros {
         const seg = this.segmentos[index];
         if (!seg) return;
         this.scene.remove(seg.mesh);
-        seg.mat.dispose();
+        // No llamamos a seg.mat.dispose() porque los materiales se comparten y se reutilizan
         this.segmentos.splice(index, 1);
     }
 
@@ -161,22 +166,20 @@ export class GestorRastros {
         if (i !== -1) this._eliminarSegmento(i);
     }
 
-    _iniciarFade(mesh, mat) {
+    _iniciarFade(mesh) {
         if (!mesh.parent) return;
-        const duracion = 800;
+        const duracion = 600;
         const inicio   = performance.now();
-        const baseOpacity = mat.opacity; // starting opacity
 
         (function fade() {
             if (!mesh.parent) return;
             const t = (performance.now() - inicio) / duracion;
             if (t >= 1) { 
-                mat.opacity = 0; 
+                mesh.scale.set(0, 0, 0);
                 return; 
             }
-            mat.opacity = baseOpacity * (1 - t);
-            // Efecto humo: se expande mientras desaparece
-            const s = 1 + t * 0.8;
+            // En vez de alterar la opacidad del material compartido, reducimos su escala hacia cero de forma fluida
+            const s = Math.max(0, 1 - t);
             mesh.scale.set(s, s, s);
             mesh.position.y += 0.005; // se eleva un poco
             requestAnimationFrame(fade);

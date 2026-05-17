@@ -214,6 +214,7 @@ const ANIMACION_ENEMIGO = {
     suavizadoInclinacion: 0.28
 };
 let inclinacionLateralActual = 0;
+let anguloJugador = 0; // Ángulo de rotación del jugador (Y-axis heading)
 const objetivoCamaraPos = new THREE.Vector3();
 const objetivoCamaraLookAt = new THREE.Vector3();
 let ultimaEmisionPosicion = 0;
@@ -373,20 +374,22 @@ function animarWalkLateralJugador(tiempo) {
 
     const movIzq = teclas["a"] ? 1 : 0;
     const movDer = teclas["d"] ? 1 : 0;
-    // Se invierte el signo para que la inclinacion visual coincida con derecha/izquierda reales.
+    // En conducción, la dirección lateral es la dirección de giro
     const direccionLateral = movIzq - movDer;
     const objetivoInclinacion = direccionLateral * ANIMACION_WALK_LATERAL.inclinacionMax;
 
     inclinacionLateralActual += (objetivoInclinacion - inclinacionLateralActual) * ANIMACION_WALK_LATERAL.suavizado;
 
-    const estaMoviendoseLateral = direccionLateral !== 0;
-    const wobble = estaMoviendoseLateral
-        ? Math.sin(tiempo * ANIMACION_WALK_LATERAL.velocidad) * ANIMACION_WALK_LATERAL.oscilacionYaw * direccionLateral
+    // Wobble solo si nos estamos moviendo adelante/atrás
+    const moviendo = teclas["w"] || teclas["s"];
+    const wobble = moviendo
+        ? Math.sin(tiempo * ANIMACION_WALK_LATERAL.velocidad) * ANIMACION_WALK_LATERAL.oscilacionYaw
         : 0;
 
-    // Base del tenedor acostado + animacion lateral tipo walk.
+    // Aplicar rotaciones usando el orden YXZ para evitar gimbal lock al girar e inclinarse
+    jugadorLocal.rotation.order = 'YXZ';
+    jugadorLocal.rotation.y = anguloJugador + wobble;
     jugadorLocal.rotation.x = -Math.PI / 2;
-    jugadorLocal.rotation.y = wobble;
     jugadorLocal.rotation.z = inclinacionLateralActual;
 }
 
@@ -436,8 +439,11 @@ function animarJugadoresRemotos(tiempo) {
 
         mesh.position.y = data.baseY + Math.sin(tiempo * ANIMACION_ENEMIGO.velocidadFlotacion + data.fase)
             * ANIMACION_ENEMIGO.amplitudFlotacion;
+
+        // Usar orden YXZ para alinearlo con el giro e inclinación
+        mesh.rotation.order = 'YXZ';
+        mesh.rotation.y = (mesh.userData.angulo || 0) + wobble;
         mesh.rotation.x = -Math.PI / 2;
-        mesh.rotation.y = wobble;
         mesh.rotation.z = data.inclinacionActual;
     }
 }
@@ -445,19 +451,25 @@ function animarJugadoresRemotos(tiempo) {
 function actualizarCamaraJugadorLocal() {
     if (!camera || !jugadorLocal) return;
 
-    // Sigue al jugador por X/Z y mantiene altura estable para evitar mareo por la flotacion.
-    objetivoCamaraPos.set(
-        jugadorLocal.position.x + CAMARA_JUGADOR.offsetX,
-        jugadorBaseY + CAMARA_JUGADOR.offsetY,
-        jugadorLocal.position.z + CAMARA_JUGADOR.offsetZ
-    );
+    // Distancia y altura ideal detrás del jugador (estilo Mario Kart - más picada)
+    const distanciaCamara = 6.2;
+    const alturaCamara = 5.2;
 
-    camera.position.lerp(objetivoCamaraPos, CAMARA_JUGADOR.suavizado);
+    // Posición ideal de la cámara detrás del jugador
+    const targetCamX = jugadorLocal.position.x + Math.sin(anguloJugador) * distanciaCamara;
+    const targetCamZ = jugadorLocal.position.z + Math.cos(anguloJugador) * distanciaCamara;
+    const targetCamY = jugadorBaseY + alturaCamara;
 
+    objetivoCamaraPos.set(targetCamX, targetCamY, targetCamZ);
+
+    // Lerp suave para la posición de la cámara (cámara fluida con inercia de giro)
+    camera.position.lerp(objetivoCamaraPos, 0.08);
+
+    // Mirar al jugador, ligeramente hacia donde apunta el tenedor
     objetivoCamaraLookAt.set(
-        jugadorLocal.position.x,
+        jugadorLocal.position.x - Math.sin(anguloJugador) * 1.5,
         jugadorBaseY + CAMARA_JUGADOR.alturaMirada,
-        jugadorLocal.position.z
+        jugadorLocal.position.z - Math.cos(anguloJugador) * 1.5
     );
     camera.lookAt(objetivoCamaraLookAt);
 }
@@ -533,6 +545,7 @@ function actualizarJugadoresRemotos(lista) {
         if (jugadoresRemotos[jugador.id]) {
             const mesh = jugadoresRemotos[jugador.id];
             mesh.userData.elemento = jugador.elemento || 'normal';
+            mesh.userData.angulo = jugador.angulo || 0;
             
             // Actualizar color del jugador remoto si cambió de elemento
             if (mesh.userData.elementoAnterior !== mesh.userData.elemento) {
@@ -753,7 +766,18 @@ manager.onError = function (url) {
     console.log("There was an error loading", url);
 };
 
+const cacheModelos = {};
+
 function cargarModelo3D(path, nombre, vectorEscala) {
+    const key = path;
+    if (cacheModelos[key]) {
+        // Clonar el modelo limpio guardado en caché
+        const clon = cacheModelos[key].clone();
+        clon.name = nombre;
+        clon.scale.copy(vectorEscala);
+        return Promise.resolve(clon);
+    }
+
     return new Promise((resolve, reject) => {
         const loaderOBJ = new OBJLoader(manager);
         const loaderMTL = new MTLLoader(manager);
@@ -767,6 +791,10 @@ function cargarModelo3D(path, nombre, vectorEscala) {
                 loaderOBJ.load(
                     path + ".obj",
                     function (object) {
+                        // Guardar una versión limpia (con escala 1,1,1) en la caché
+                        const limpio = object.clone();
+                        cacheModelos[key] = limpio;
+
                         object.name = nombre;
                         object.scale.copy(vectorEscala);
                         resolve(object);
@@ -839,25 +867,34 @@ function moverJugador() {
     const velocidad = 0.08;
     const desplazamiento = new THREE.Vector3();
     let seMovio = false;
+    let seRoto = false;
 
+    // Rotar con A y D (estilo Mario Kart)
+    if (teclas["a"]) {
+        anguloJugador += 0.045; // Sensibilidad del giro
+        seRoto = true;
+    }
+    if (teclas["d"]) {
+        anguloJugador -= 0.045;
+        seRoto = true;
+    }
+
+    // Asegurar rango [0, 2*PI]
+    anguloJugador = (anguloJugador + Math.PI * 2) % (Math.PI * 2);
+
+    // Mover adelante/atrás en base al ángulo actual
     if (teclas["w"]) {
-        desplazamiento.z -= velocidad;
+        desplazamiento.x = -Math.sin(anguloJugador) * velocidad;
+        desplazamiento.z = -Math.cos(anguloJugador) * velocidad;
         seMovio = true;
     }
     if (teclas["s"]) {
-        desplazamiento.z += velocidad;
-        seMovio = true;
-    }
-    if (teclas["a"]) {
-        desplazamiento.x -= velocidad;
-        seMovio = true;
-    }
-    if (teclas["d"]) {
-        desplazamiento.x += velocidad;
+        desplazamiento.x = Math.sin(anguloJugador) * (velocidad * 0.6); // Marcha atrás más lenta
+        desplazamiento.z = Math.cos(anguloJugador) * (velocidad * 0.6);
         seMovio = true;
     }
 
-    if (!seMovio) return;
+    if (!seMovio && !seRoto) return;
 
     const posicionPropuesta = jugadorLocal.position.clone().add(desplazamiento);
     const dentroDeLimites = Math.abs(posicionPropuesta.x) < LIMITE_ESCENARIO && Math.abs(posicionPropuesta.z) < LIMITE_ESCENARIO;
@@ -865,23 +902,23 @@ function moverJugador() {
     if (dentroDeLimites) {
         const posicionAnterior = jugadorLocal.position.clone();
 
-        jugadorLocal.position.copy(posicionPropuesta);
+        if (seMovio) {
+            jugadorLocal.position.copy(posicionPropuesta);
 
-        crearRastro(jugadorLocal.position, elementoActual);
+            crearRastro(jugadorLocal.position, elementoActual);
 
-        socket.emit("CrearRastro", {
-            x: jugadorLocal.position.x,
-            y: jugadorLocal.position.y,
-            z: jugadorLocal.position.z,
-            elemento: elementoActual
-        });
+            socket.emit("CrearRastro", {
+                x: jugadorLocal.position.x,
+                y: jugadorLocal.position.y,
+                z: jugadorLocal.position.z,
+                elemento: elementoActual
+            });
+        }
 
         if (hayColisionConObstaculo()) {
             jugadorLocal.position.copy(posicionAnterior);
             return;
         }
-
-        // (La colisión se maneja centralmente en verificarCombate)
 
         const ahora = performance.now();
         if (conectado && (ahora - ultimaEmisionPosicion >= RED_CONFIG.intervaloEmisionPosicionMs)) {
@@ -889,7 +926,8 @@ function moverJugador() {
             socket.emit("Posicion", {
                 x: jugadorLocal.position.x,
                 y: jugadorLocal.position.y,
-                z: jugadorLocal.position.z
+                z: jugadorLocal.position.z,
+                angulo: anguloJugador
             });
         }
     }
@@ -1273,7 +1311,12 @@ async function init() {
             if (el) el.textContent = '0';
             _refrescarHUDJugador();
             if (gestorRastros) gestorRastros.limpiarPropietario('jugador');
-            if (jugadorLocal) jugadorLocal.position.set(0, jugadorBaseY, 0);
+            if (jugadorLocal) {
+                jugadorLocal.position.set(0, jugadorBaseY, 0);
+                anguloJugador = 0;
+                jugadorLocal.rotation.order = 'YXZ';
+                jugadorLocal.rotation.y = 0;
+            }
             ultimoCambioCaos = performance.now();
         });
 
@@ -1292,6 +1335,11 @@ async function init() {
             jugadorMuerto = false;
             _refrescarHUDJugador();
             if (gestorRastros) gestorRastros.limpiarPropietario('jugador');
+            if (jugadorLocal) {
+                anguloJugador = 0;
+                jugadorLocal.rotation.order = 'YXZ';
+                jugadorLocal.rotation.y = 0;
+            }
             ultimoCambioCaos = performance.now();
         });
 

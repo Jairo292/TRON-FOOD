@@ -236,6 +236,7 @@ io.on("connection", (socket) => {
     jugador.x = posicion.x;
     jugador.y = posicion.y;
     jugador.z = posicion.z;
+    jugador.angulo = posicion.angulo || 0;
 
     io.emit("listaJugadores", jugadores);
   });
