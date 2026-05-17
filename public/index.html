@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kitchen Arena</title>
+<meta name="description" content="Kitchen Arena — el videojuego de cocina multijugador. ¡Elige tu escenario y compite!">
+<title>Kitchen Arena · Menú Principal</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
@@ -17,24 +18,66 @@
 
     <h1 class="titulo-juego">Kitchen Arena</h1>
 
-    <!-- BOTONES LOGIN / REGISTRO -->
-    <div class="d-flex justify-content-center gap-3 mb-4">
+    <!-- ═══════════════════════════════════════════════
+         ZONA DE SESIÓN (se gestiona desde auth.js)
+         updateAuthUI() muestra uno de los dos bloques
+         según el estado de autenticación.
+    ═══════════════════════════════════════════════ -->
+    <div id="zona-sesion" class="zona-sesion mb-4">
 
-        <button
-            class="btn btn-outline-light glow"
-            data-bs-toggle="modal"
-            data-bs-target="#loginModal"
-        >
-            Login
-        </button>
+        <!-- [A] Sin sesión: Login + Registro -->
+        <div id="zona-invitado" class="auth-zona d-flex justify-content-center gap-3">
 
-        <button
-            class="btn btn-outline-warning glow"
-            data-bs-toggle="modal"
-            data-bs-target="#registroModal"
-        >
-            Registro
-        </button>
+            <button
+                id="btn-login"
+                class="btn btn-outline-light glow"
+                data-bs-toggle="modal"
+                data-bs-target="#loginModal"
+                aria-label="Abrir formulario de inicio de sesión"
+            >
+                🎮 Login
+            </button>
+
+            <button
+                id="btn-registro"
+                class="btn btn-outline-warning glow"
+                data-bs-toggle="modal"
+                data-bs-target="#registroModal"
+                aria-label="Abrir formulario de registro"
+            >
+                ✨ Registro
+            </button>
+
+        </div>
+
+        <!-- [B] Con sesión: Avatar + Nombre + Cerrar sesión -->
+        <div id="zona-logueado" class="auth-zona auth-logueado" style="display:none">
+
+            <div class="jugador-card">
+
+                <!-- Avatar circular con inicial del nombre -->
+                <div class="jugador-avatar" aria-hidden="true">
+                    <span id="avatar-letra">?</span>
+                </div>
+
+                <div class="jugador-info">
+                    <span class="jugador-saludo">¡Bienvenido!</span>
+                    <span id="nombre-usuario-display" class="jugador-nombre"></span>
+                </div>
+
+                <button
+                    id="btn-cerrar-sesion"
+                    class="btn btn-cerrar-sesion glow"
+                    onclick="cerrarSesion()"
+                    aria-label="Cerrar sesión"
+                >
+                    <span class="btn-cerrar-icono">⏻</span>
+                    <span class="btn-cerrar-texto">Cerrar sesión</span>
+                </button>
+
+            </div>
+
+        </div>
 
     </div>
 
@@ -185,6 +228,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- auth.js debe cargarse ANTES que script.js -->
+<script src="js/auth.js"></script>
 <script src="js/script.js"></script>
 
 

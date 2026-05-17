@@ -127,10 +127,18 @@ async function login() {
 
         if (respuesta.ok) {
 
-            alert("Bienvenido " + data.usuario);
+            // Guardar sesión y actualizar UI sin reload
+            AuthState.guardar(data.usuario, data.id);
+            updateAuthUI();
 
-            localStorage.setItem("usuario", data.usuario);
-            localStorage.setItem("idUsuario", data.id);
+            // Cerrar modal de login suavemente
+            try {
+                const modalEl = document.getElementById('loginModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            } catch (e) {}
+
+            _mostrarToast('¡Bienvenido, ' + data.usuario + '! 🔥');
 
         } else {
 
@@ -215,15 +223,18 @@ function handleFBResponse(resp) {
             const data = await loginRes.json();
 
             if (loginRes.ok) {
-                alert('Bienvenido ' + data.usuario);
-                localStorage.setItem('usuario', data.usuario);
-                localStorage.setItem('idUsuario', data.id);
-                // Cerrar modal si está abierto
+                // Guardar sesión y actualizar UI sin reload
+                AuthState.guardar(data.usuario, data.id);
+                updateAuthUI();
+
+                // Cerrar modal
                 try {
                     const modalEl = document.getElementById('loginModal');
                     const modal = bootstrap.Modal.getInstance(modalEl);
                     if (modal) modal.hide();
                 } catch (e) {}
+
+                _mostrarToast('¡Bienvenido, ' + data.usuario + '! 🔥');
             } else {
                 alert(data.mensaje || 'Error en login con Facebook');
             }

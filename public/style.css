@@ -228,3 +228,214 @@ body::before {
     }
 
 }
+
+/* ============================================================
+   AUTH UI — Zona de sesión (auth.js)
+   ============================================================ */
+
+/* Zona contenedora */
+.zona-sesion {
+    min-height: 56px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Bloque de transición */
+.auth-zona {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    /* Por defecto invisible; auth.js lo hace visible */
+}
+
+.auth-zona.auth-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.auth-zona.auth-fade-out {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* ── Jugador logueado: card elegante ─────────────────────── */
+
+.auth-logueado {
+    width: 100%;
+}
+
+.jugador-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    border-radius: 50px;
+    padding: 10px 22px;
+
+    box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(255, 87, 34, 0.18) inset;
+
+    animation: cardEntrada 0.4s ease both;
+}
+
+@keyframes cardEntrada {
+    from { opacity: 0; transform: scale(0.94) translateY(-8px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+/* Avatar circular con inicial */
+.jugador-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    background: linear-gradient(135deg, #ff5722, #ff9800);
+    box-shadow: 0 0 16px rgba(255, 87, 34, 0.65);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0;
+
+    animation: avatarPulse 3s ease-in-out infinite;
+}
+
+@keyframes avatarPulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(255, 87, 34, 0.65); }
+    50%       { box-shadow: 0 0 28px rgba(255, 152,  0, 0.90); }
+}
+
+/* Info de nombre */
+.jugador-info {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.2;
+}
+
+.jugador-saludo {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.jugador-nombre {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(255, 152, 0, 0.6);
+    white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Botón Cerrar sesión */
+.btn-cerrar-sesion {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    background: rgba(255, 59, 59, 0.15);
+    border: 1px solid rgba(255, 59, 59, 0.45);
+    color: #ff7070;
+
+    border-radius: 50px;
+    padding: 7px 18px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+
+    transition: all 0.28s ease;
+    white-space: nowrap;
+}
+
+.btn-cerrar-sesion:hover {
+    background: rgba(255, 59, 59, 0.30);
+    border-color: rgba(255, 59, 59, 0.80);
+    color: #fff;
+    transform: scale(1.06);
+    box-shadow: 0 0 18px rgba(255, 59, 59, 0.55);
+}
+
+.btn-cerrar-icono {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+/* ── Toast de notificación ───────────────────────────────── */
+
+.auth-toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+
+    background: rgba(15, 15, 25, 0.95);
+    border: 1px solid rgba(255, 87, 34, 0.5);
+    border-radius: 50px;
+    backdrop-filter: blur(12px);
+
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 12px 28px;
+
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 20px rgba(255, 87, 34, 0.3);
+
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.auth-toast--visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ── Responsive: card en pantallas pequeñas ──────────────── */
+
+@media (max-width: 480px) {
+    .jugador-card {
+        flex-wrap: wrap;
+        border-radius: 20px;
+        padding: 14px 16px;
+    }
+
+    .jugador-nombre {
+        max-width: 120px;
+        font-size: 0.85rem;
+    }
+
+    .btn-cerrar-texto {
+        display: none;
+    }
+
+    .btn-cerrar-sesion {
+        padding: 8px 12px;
+        border-radius: 50%;
+    }
+}
