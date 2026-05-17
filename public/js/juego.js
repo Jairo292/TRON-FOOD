@@ -189,8 +189,8 @@ const FLOTACION_JUGADOR = {
 };
 const FONDO_ESCENARIO = {
     "1": 0x76b5c5, // Celeste vivo
-    "2": 0xffb7b2, // Rosa pastel cálido
-    "3": 0xe2f0cb  // Verde manzana claro
+    "2": 0x151b24, // Azul muy oscuro (tétrico)
+    "3": 0x080404  // Casi negro / pesadilla
 };
 const ANIMACION_WALK_LATERAL = {
     inclinacionMax: 0.35,
@@ -637,35 +637,83 @@ function crearEscena() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     contenedor.appendChild(renderer.domElement);
 
-    // 1. Luz de Hemisferio (mezcla luz cálida arriba con reflejos fríos abajo, clave en estilo cartoon)
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x445588, 0.6);
-    hemiLight.position.set(0, 20, 0);
-    scene.add(hemiLight);
-
-    // 2. Luz Ambiental suave y cálida para rellenar huecos oscuros
-    ambientLight = new THREE.AmbientLight(0xffeacc, 0.5);
-    scene.add(ambientLight);
-
-    // 3. Luz Direccional Fuerte (Sol / Lámpara principal), proyecta sombras nítidas
+    // --- CONFIGURACIÓN DE LUCES Y NIEBLA SEGÚN EL ESCENARIO ---
+    
+    // Configuraciones comunes para la luz direccional (sombras)
     directionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
-    directionalLight.position.set(12, 25, 8);
     directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.set(2048, 2048); // Mayor resolución
+    directionalLight.shadow.mapSize.set(2048, 2048);
     directionalLight.shadow.camera.left = -25;
     directionalLight.shadow.camera.right = 25;
     directionalLight.shadow.camera.top = 25;
     directionalLight.shadow.camera.bottom = -25;
     directionalLight.shadow.bias = -0.0005;
-    scene.add(directionalLight);
 
-    // 4. SpotLight vibrante para centrar la atención en la zona de juego
-    spotLight = new THREE.SpotLight(0xffaa44, 1.8, 60, Math.PI / 4.5, 0.4, 1.2);
-    spotLight.position.set(-5, 18, 12);
-    spotLight.target.position.set(0, 0, 0);
-    spotLight.castShadow = true;
-    spotLight.shadow.mapSize.set(1024, 1024);
-    scene.add(spotLight);
-    scene.add(spotLight.target);
+    if (escenarioSeleccionado === "1") {
+        // ESCENARIO 1: Animado y Vivo
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x445588, 0.6);
+        hemiLight.position.set(0, 20, 0);
+        scene.add(hemiLight);
+
+        ambientLight = new THREE.AmbientLight(0xffeacc, 0.5);
+        scene.add(ambientLight);
+
+        directionalLight.color.setHex(0xffffff);
+        directionalLight.intensity = 1.4;
+        directionalLight.position.set(12, 25, 8);
+        scene.add(directionalLight);
+
+        spotLight = new THREE.SpotLight(0xffaa44, 1.8, 60, Math.PI / 4.5, 0.4, 1.2);
+        spotLight.position.set(-5, 18, 12);
+        spotLight.target.position.set(0, 0, 0);
+        scene.add(spotLight);
+        scene.add(spotLight.target);
+        
+        scene.fog = null; // Sin niebla
+
+    } else if (escenarioSeleccionado === "2") {
+        // ESCENARIO 2: Tétrico y Abandonado
+        const hemiLight = new THREE.HemisphereLight(0x444455, 0x111122, 0.3);
+        hemiLight.position.set(0, 20, 0);
+        scene.add(hemiLight);
+
+        ambientLight = new THREE.AmbientLight(0x223344, 0.3); // Luz azulada pálida
+        scene.add(ambientLight);
+
+        directionalLight.color.setHex(0x556688); // Luz de luna
+        directionalLight.intensity = 0.8;
+        directionalLight.position.set(10, 20, -5);
+        scene.add(directionalLight);
+
+        spotLight = new THREE.SpotLight(0xff5522, 2.5, 50, Math.PI / 5, 0.8, 1.8); // Foco naranja oxidado
+        spotLight.position.set(0, 15, 0);
+        spotLight.target.position.set(0, 0, 0);
+        scene.add(spotLight);
+        scene.add(spotLight.target);
+
+        // Añadir una ligera niebla para dar misterio
+        scene.fog = new THREE.FogExp2(FONDO_ESCENARIO["2"], 0.025);
+
+    } else {
+        // ESCENARIO 3: Pesadilla Oscura
+        ambientLight = new THREE.AmbientLight(0x330000, 0.2); // Muy poca luz ambiental (rojiza)
+        scene.add(ambientLight);
+
+        directionalLight.color.setHex(0x331111); // Luz apenas visible y oscura
+        directionalLight.intensity = 0.5;
+        directionalLight.position.set(0, 25, 0);
+        scene.add(directionalLight);
+
+        // Foco muy cerrado, fuerte y frío, estilo linterna de película de terror
+        spotLight = new THREE.SpotLight(0xffffff, 3.5, 40, Math.PI / 9, 1.0, 2);
+        spotLight.position.set(5, 12, 5);
+        spotLight.target.position.set(0, 0, 0);
+        scene.add(spotLight);
+        scene.add(spotLight.target);
+
+        // Niebla muy densa y negra
+        scene.fog = new THREE.FogExp2(FONDO_ESCENARIO["3"], 0.045);
+    }
 
     const textureLoader = new THREE.TextureLoader();
     const texturaPiso = textureLoader.load("./mesa.png");
