@@ -14,6 +14,31 @@
 
 <body>
 
+<!-- Música de fondo -->
+<audio id="bgMusic" loop>
+    <source src="musica.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let musicaIniciada = false;
+        const bgMusic = document.getElementById('bgMusic');
+        
+        function iniciarMusica() {
+            if (musicaIniciada || !bgMusic) return;
+            const vol = localStorage.getItem('volumenGlobal') !== null ? localStorage.getItem('volumenGlobal') : 50;
+            bgMusic.volume = parseInt(vol) / 100;
+            bgMusic.play().then(() => {
+                musicaIniciada = true;
+            }).catch(e => console.log("Esperando interacción para reproducir música"));
+        }
+
+        // Intentar iniciar automáticamente y también al primer clic en la pantalla
+        iniciarMusica();
+        document.body.addEventListener('click', iniciarMusica, { once: true });
+    });
+</script>
+
 <div class="caja-menu marco-neon">
 
     <h1 class="titulo-juego">Kitchen Arena</h1>
