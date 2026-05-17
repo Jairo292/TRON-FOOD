@@ -75,6 +75,15 @@ const posicionesPendientesRemotos = {};
 let plantillaJugadorRemotoPromise = null;
 
 let elementoActual = "normal";
+let colaElementos = [];
+
+const mapeoElementoIcono = {
+    fuego: "salsa",
+    agua: "limonada", 
+    hielo: "yogurt",
+    aire: "algodon",
+    normal: "salsa"
+};
 
 const coloresElemento = {
     fuego: 0xff3300,
@@ -85,6 +94,36 @@ const coloresElemento = {
 };
 
 const rastros = [];
+
+function actualizarUIElementos() {
+    // Actualizar elemento actual
+    const iconoActual = document.getElementById("icono-elemento-actual");
+    if (iconoActual) {
+        const nombreIcono = mapeoElementoIcono[elementoActual] || "normal";
+        iconoActual.src = `iconos/${nombreIcono}.png`;
+    }
+
+    // Actualizar cola de elementos
+    const colaContainer = document.getElementById("cola-elementos");
+    if (colaContainer) {
+        colaContainer.innerHTML = "";
+        for (let i = 0; i < colaElementos.length; i++) {
+            if (i > 0) {
+                const flecha = document.createElement("span");
+                flecha.textContent = " → ";
+                flecha.style.color = "#aaa";
+                flecha.style.margin = "0 5px";
+                colaContainer.appendChild(flecha);
+            }
+
+            const img = document.createElement("img");
+            const nombreIcono = mapeoElementoIcono[colaElementos[i]] || "normal";
+            img.src = `iconos/${nombreIcono}.png`;
+            img.className = "icono-elemento";
+            colaContainer.appendChild(img);
+        }
+    }
+}
 
 function aplicarColorModelo(modelo, colorHex) {
     modelo.traverse((child) => {
@@ -841,6 +880,15 @@ function revisarColisionPowerUps() {
             console.log("Agarraste power up:", powerUp.elemento);
 
             elementoActual = powerUp.elemento;
+            
+            // Agregar a la cola de elementos
+            colaElementos.unshift(elementoActual);
+            if (colaElementos.length > 3) {
+                colaElementos.pop();
+            }
+            
+            // Actualizar UI
+            actualizarUIElementos();
 
             socket.emit("CambiarElemento", {
                 elemento: elementoActual
@@ -932,21 +980,28 @@ async function init() {
         return;
     }
 
-    crearEscena();
-    configurarSockets();
-    configurarTeclado();
+    try {
+        crearEscena();
+        configurarSockets();
+        configurarTeclado();
 
-    await cargarJugadorLocalModelo();
-    await cargarEscenarioSeleccionado();
+        await cargarJugadorLocalModelo();
+        await cargarEscenarioSeleccionado();
 
 
-    // Modo de juego: leer elección de configuración (pvp | pvia)
-    const modo = localStorage.getItem('modoJuego') || 'pvp';
-    if (modo === 'pvia') {
-        await spawnAI();
+        // Modo de juego: leer elección de configuración (pvp | pvia)
+        const modo = localStorage.getItem('modoJuego') || 'pvp';
+        if (modo === 'pvia') {
+            await spawnAI();
+        }
+
+        // Inicializar UI de elementos
+        actualizarUIElementos();
+
+        animate();
+    } catch (error) {
+        console.error("Error en init:", error);
     }
-
-    animate();
 }
 
 init();

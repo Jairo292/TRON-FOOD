@@ -19,15 +19,13 @@
     </div>
     <div class="elemento-actual">
   Elemento Actual:
-  <img src="iconos/salsa.png" class="icono-elemento">
+  <img id="icono-elemento-actual" src="iconos/salsa.png" class="icono-elemento">
 </div>
    <div class="queue">
   Cola:
-  <img src="iconos/limonada.png" class="icono-elemento">
-  →
-  <img src="iconos/yogurt.png" class="icono-elemento">
-  →
-  <img src="iconos/algodon.png" class="icono-elemento">
+  <span id="cola-elementos">
+    <img src="iconos/salsa.png" class="icono-elemento">
+  </span>
 </div>
 <!--<div class="p-2">
   <input id="idNombreJugador" type="text" placeholder="Tu nombre">
@@ -119,6 +117,15 @@
 </script>
 
 <script src="/socket.io/socket.io.js"></script>
+
+<script>
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+});
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled rejection:', event.reason);
+});
+</script>
 
 <script type="module" src="./js/juego.js"></script>
 
