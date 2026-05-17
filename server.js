@@ -39,6 +39,40 @@ const db = new sqlite3.Database(path.join(__dirname, "kitchenarena.db"), (err) =
 
 const jugadores = [];
 
+const powerUps = [];
+let contadorPowerUps = 0;
+
+const tiposPowerUps = [
+  { modelo: "salsa", elemento: "fuego" },
+  { modelo: "limonada", elemento: "agua" },
+  { modelo: "yogurt", elemento: "hielo" },
+  { modelo: "algodon", elemento: "aire" }
+];
+
+function generarPowerUps() {
+  powerUps.length = 0;
+console.log("PowerUps generados:", powerUps);
+  for (let i = 0; i < 8; i++) {
+    const tipo = tiposPowerUps[Math.floor(Math.random() * tiposPowerUps.length)];
+
+    powerUps.push({
+      id: contadorPowerUps++,
+      modelo: tipo.modelo,
+      elemento: tipo.elemento,
+      x: Math.random() * 60 - 30,
+      y: 0,
+      z: Math.random() * 60 - 30
+    });
+  }
+
+  io.emit("powerUpsActualizados", powerUps);
+
+  setTimeout(() => {
+    powerUps.length = 0;
+    io.emit("powerUpsActualizados", powerUps);
+  }, 7000);
+}
+
 app.post("/registro", async (req, res) => {
 
   const { usuario, correo, password } = req.body;
@@ -159,6 +193,7 @@ app.get("/ranking", (req, res) => {
 
 io.on("connection", (socket) => {
   console.log("Usuario conectado:", socket.id);
+  socket.emit("powerUpsActualizadosSocket", powerUps);
 
   socket.on("Iniciar", (nombre) => {
     console.log("Nombre recibido:", nombre);
@@ -203,6 +238,7 @@ io.on("connection", (socket) => {
   });
 });
 
+setInterval(generarPowerUps, 5000);
 server.listen(3000, () => {
   console.log("Servidor corriendo en http://localhost:3000");
 });

@@ -15,7 +15,11 @@ let jugadorLocal = null;
 let jugadorBaseY = 0.5;
 const clock = new THREE.Clock();
 const LIMITE_ESCENARIO = 32;
+const obstaculos = [];
+const itemsElemento = [];
+const jugadorBB = new THREE.Box3();
 const modelosFlotantes = [];
+const powerUps = [];
 let aiAgent = null;
 const AI_CONFIG = {
     detectionRadius: 12,
@@ -266,6 +270,16 @@ function configurarSockets() {
     socket.on("listaJugadores", (lista) => {
         actualizarJugadoresRemotos(lista);
     });
+
+    socket.on("powerUpsActualizados", async (listaPowerUps) => {
+        console.log("PowerUps recibidos:", listaPowerUps);
+
+        limpiarPowerUps();
+
+        for (const data of listaPowerUps) {
+            await crearPowerUpDesdeServidor(data);
+        }
+    });
 }
 
 function actualizarJugadoresRemotos(lista) {
@@ -330,7 +344,7 @@ async function spawnAI() {
     if (aiAgent) return;
     try {
         // Cargar específicamente el modelo del tenedor para la IA
-        const modeloIA = await cargarModelo3D("./models/tenedor", "ia-tenedor", new THREE.Vector3(2,2,2));
+        const modeloIA = await cargarModelo3D("./models/tenedor", "ia-tenedor", new THREE.Vector3(2, 2, 2));
         // Aplicar color rojo para diferenciar
         aplicarColorModelo(modeloIA, 0xff4d6d);
         // Posicionar IA en un lugar aleatorio lejos del jugador
@@ -430,20 +444,20 @@ function crearEscena() {
     scene.add(spotLight.target);
 
     const textureLoader = new THREE.TextureLoader();
-const texturaPiso = textureLoader.load("./mesa.png");
+    const texturaPiso = textureLoader.load("./mesa.png");
 
-texturaPiso.wrapS = THREE.RepeatWrapping;
-texturaPiso.wrapT = THREE.RepeatWrapping;
-texturaPiso.repeat.set(20, 20);
+    texturaPiso.wrapS = THREE.RepeatWrapping;
+    texturaPiso.wrapT = THREE.RepeatWrapping;
+    texturaPiso.repeat.set(20, 20);
 
-piso = new THREE.Mesh(
-    new THREE.PlaneGeometry(72, 72),
-    new THREE.MeshStandardMaterial({ map: texturaPiso })
-);
+    piso = new THREE.Mesh(
+        new THREE.PlaneGeometry(72, 72),
+        new THREE.MeshStandardMaterial({ map: texturaPiso })
+    );
 
-piso.rotation.x = -Math.PI / 2;
-piso.receiveShadow = true;
-scene.add(piso);
+    piso.rotation.x = -Math.PI / 2;
+    piso.receiveShadow = true;
+    scene.add(piso);
     window.addEventListener("resize", actualizarTamanoRenderer);
     actualizarTamanoRenderer();
 }
@@ -501,14 +515,6 @@ function cargarModelo3D(path, nombre, vectorEscala) {
     });
 }
 
-/*let jugadorLocal = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 1, 1),
-    new THREE.MeshStandardMaterial({ color: 0x00ffcc })
-);
-jugadorLocal.position.set(0, 0.5, 0);
-scene.add(jugadorLocal);
-*/
-
 async function cargarJugadorLocalModelo() {
     try {
         // cubo temporal
@@ -523,7 +529,7 @@ async function cargarJugadorLocalModelo() {
         const modelo = await cargarModelo3D(
             "./models/tenedor",
             "tenedor",
-            new THREE.Vector3(3,3,3)
+            new THREE.Vector3(3, 3, 3)
         );
 
         modelo.position.copy(jugadorLocal.position);
@@ -543,123 +549,7 @@ async function cargarJugadorLocalModelo() {
         console.error("No se pudo cargar el modelo local:", error);
     }
 }
-/*
-async function cargarEscenario() {
-    try {
-        // algodon
-        const algodon = await cargarModelo3D(
-            "./models/algodon",
-            "algodon",
-            new THREE.Vector3(0.15, 0.15, 0.15)
-        );
-        algodon.position.set(3, 0, 2);
-        scene.add(algodon);
 
-        // catsup
-        const catsup = await cargarModelo3D(
-            "./models/catsup",
-            "Catsup",
-            new THREE.Vector3(0.6, 0.6, 0.6)
-        );
-        catsup.position.set(-4, 0, -2);
-        scene.add(catsup);
-
-        // cuchara
-        const cuchara = await cargarModelo3D(
-            "./models/cuchara",
-            "cuchara",
-            new THREE.Vector3(2, 2, 2)
-        );
-        cuchara.position.set(2, 0, 0);
-        cuchara.rotation.y = Math.PI / 2;
-        scene.add(cuchara);
-
-        // florero
-        const florero = await cargarModelo3D(
-            "./models/florero",
-            "Florero",
-            new THREE.Vector3(5, 5, 5)
-        );
-        florero.position.set(2, 0, -3);
-        florero.rotation.y = Math.PI / 2;
-        scene.add(florero);
-
-        // jugo
-        const jugo = await cargarModelo3D(
-            "./models/jugo",
-            "Jugo",
-            new THREE.Vector3(2, 2, 2)
-        );
-        jugo.position.set(2, 0, -3);
-        jugo.rotation.y = Math.PI / 2;
-        scene.add(jugo);
-
-        // limonada
-        const limonada = await cargarModelo3D(
-            "./models/limonada",
-            "Limonada",
-            new THREE.Vector3(0.15, 0.15, 0.15)
-        );
-        limonada.position.set(2, 0, -3);
-        limonada.rotation.y = Math.PI / 2;
-        scene.add(limonada);
-
-        // saleros
-        const saleros = await cargarModelo3D(
-            "./models/saleros",
-            "Saleros",
-            new THREE.Vector3(2, 2, 2)
-        );
-        saleros.position.set(2, 0, -3);
-        saleros.rotation.y = Math.PI / 2;
-        scene.add(saleros);
-
-        // salsa
-        const salsa = await cargarModelo3D(
-            "./models/salsa",
-            "Salsa",
-            new THREE.Vector3(0.15, 0.15, 0.15)
-        );
-        salsa.position.set(2, 0, -3);
-        salsa.rotation.y = Math.PI / 2;
-        scene.add(salsa);
-        //alo
-        // taza
-        const taza = await cargarModelo3D(
-            "./models/taza",
-            "Taza",
-            new THREE.Vector3(13, 13, 13)
-        );
-        taza.position.set(5, 0, -5);
-        taza.rotation.y = Math.PI / 2;
-        scene.add(taza);
-
-        // tenedor
-        const tenedor = await cargarModelo3D(
-            "./models/tenedor",
-            "Tenedor",
-            new THREE.Vector3(2, 2, 2)
-        );
-        tenedor.position.set(2, 0, 5);
-        tenedor.rotation.y = Math.PI / 2;
-        scene.add(tenedor);
-
-        // yogurt
-        const yogurt = await cargarModelo3D(
-            "./models/yogurt",
-            "Yogurt",
-            new THREE.Vector3(0.15, 0.15, 0.15)
-        );
-        yogurt.position.set(2, 0, -3);
-        yogurt.rotation.y = Math.PI / 2;
-        scene.add(yogurt);
-
-        console.log("Escenario cargado");
-    } catch (error) {
-        console.error("Error cargando escenario:", error);
-    }
-}
-*/
 function configurarTeclado() {
     window.addEventListener("keydown", (event) => {
         teclas[event.key.toLowerCase()] = true;
@@ -700,7 +590,14 @@ function moverJugador() {
     const dentroDeLimites = Math.abs(posicionPropuesta.x) < LIMITE_ESCENARIO && Math.abs(posicionPropuesta.z) < LIMITE_ESCENARIO;
 
     if (dentroDeLimites) {
+        const posicionAnterior = jugadorLocal.position.clone();
+
         jugadorLocal.position.copy(posicionPropuesta);
+
+        if (hayColisionConObstaculo()) {
+            jugadorLocal.position.copy(posicionAnterior);
+            return;
+        }
 
         const ahora = performance.now();
         if (conectado && (ahora - ultimaEmisionPosicion >= RED_CONFIG.intervaloEmisionPosicionMs)) {
@@ -711,155 +608,6 @@ function moverJugador() {
                 z: jugadorLocal.position.z
             });
         }
-    }
-}
-
-const DEFINICIONES_MODELOS_ESCENARIO = [
-    {
-        path: "./models/algodon",
-        nombreBase: "algodon",
-        escala: new THREE.Vector3(0.15, 0.15, 0.15),
-        radio: 2.8,
-        flotante: { amplitud: 0.22, velocidad: 1.4, rotacionY: 0.45 }
-    },
-    {
-        path: "./models/catsup",
-        nombreBase: "catsup",
-        escala: new THREE.Vector3(0.6, 0.6, 0.6),
-        radio: 3.6
-    },
-    {
-        path: "./models/florero",
-        nombreBase: "florero",
-        escala: new THREE.Vector3(6, 6, 6),
-        radio: 5.2,
-        rotacionYInicial: Math.PI / 2
-    },
-    {
-        path: "./models/limonada",
-        nombreBase: "limonada",
-        escala: new THREE.Vector3(0.15, 0.15, 0.15),
-        radio: 2.8,
-        flotante: { amplitud: 0.2, velocidad: 1.15, rotacionY: 0.35 }
-    },
-    {
-        path: "./models/saleros",
-        nombreBase: "saleros",
-        escala: new THREE.Vector3(20, 20, 20),
-        radio: 7.5,
-        rotacionYInicial: Math.PI / 2
-    },
-    {
-        path: "./models/salsa",
-        nombreBase: "salsa-a",
-        escala: new THREE.Vector3(0.15, 0.15, 0.15),
-        radio: 2.8,
-        flotante: { amplitud: 0.18, velocidad: 1.2, rotacionY: 0.5 }
-    },
-    {
-        path: "./models/salsa",
-        nombreBase: "salsa-b",
-        escala: new THREE.Vector3(0.15, 0.15, 0.15),
-        radio: 2.8,
-        flotante: { amplitud: 0.18, velocidad: 1.3, rotacionY: 0.45 }
-    },
-    {
-        path: "./models/taza",
-        nombreBase: "taza",
-        escala: new THREE.Vector3(15, 15, 15),
-        radio: 6.8,
-        rotacionYInicial: Math.PI / 2
-    },
-    {
-        path: "./models/yogurt",
-        nombreBase: "yogurt",
-        escala: new THREE.Vector3(0.15, 0.15, 0.15),
-        radio: 2.8,
-        flotante: { amplitud: 0.2, velocidad: 1.25, rotacionY: 0.42 }
-    }
-];
-
-function crearDefinicionAleatoria() {
-    const base = DEFINICIONES_MODELOS_ESCENARIO[
-        Math.floor(Math.random() * DEFINICIONES_MODELOS_ESCENARIO.length)
-    ];
-
-    return {
-        ...base,
-        nombreBase: `${base.nombreBase}-extra`
-    };
-}
-
-function generarPosicionLibre(ocupadas, radio, rango = 30, radioCentroBloqueado = 5) {
-    const maxIntentos = 200;
-
-    for (let i = 0; i < maxIntentos; i++) {
-        const x = (Math.random() * 2 - 1) * rango;
-        const z = (Math.random() * 2 - 1) * rango;
-
-        // Deja libre la zona central para el spawn del jugador.
-        if (Math.hypot(x, z) < radioCentroBloqueado) continue;
-
-        let hayChoque = false;
-        for (const ocupada of ocupadas) {
-            const distancia = Math.hypot(x - ocupada.x, z - ocupada.z);
-            if (distancia < radio + ocupada.radio + 2.5) {
-                hayChoque = true;
-                break;
-            }
-        }
-
-        if (!hayChoque) {
-            return { x, z };
-        }
-    }
-
-    return null;
-}
-
-async function poblarEscenarioAleatorio(totalModelos) {
-    const definiciones = DEFINICIONES_MODELOS_ESCENARIO.map((item) => ({ ...item }));
-
-    while (definiciones.length < totalModelos) {
-        definiciones.push(crearDefinicionAleatoria());
-    }
-
-    const ocupadas = [];
-
-    for (let i = 0; i < definiciones.length; i++) {
-        const def = definiciones[i];
-        const posicion = generarPosicionLibre(ocupadas, def.radio);
-        if (!posicion) continue;
-
-        const modelo = await cargarModelo3D(
-            def.path,
-            `${def.nombreBase}-${i + 1}`,
-            def.escala
-        );
-
-        modelo.position.set(posicion.x, 0, posicion.z);
-        modelo.rotation.y = def.rotacionYInicial ?? Math.random() * Math.PI * 2;
-        scene.add(modelo);
-
-        if (def.flotante) {
-            registrarModeloFlotante(modelo, def.flotante);
-        } else {
-            // Los props estáticos no requieren recalcular matrices cada frame.
-            modelo.updateMatrix();
-            modelo.matrixAutoUpdate = false;
-        }
-
-        ocupadas.push({ x: posicion.x, z: posicion.z, radio: def.radio });
-    }
-}
-
-async function cargarEscenarioSeleccionado() {
-    if (escenarioSeleccionado === "1") {
-        await cargarEscenario1();
-    } else if (escenarioSeleccionado === "2") {
-        await cargarEscenario2();
-    } else {
-        await cargarEscenario3();
     }
 }
 
@@ -880,6 +628,7 @@ function animate() {
 
     animarJugadorLocal(tiempo);
     moverJugador();
+    revisarColisionPowerUps();
     animarWalkLateralJugador(tiempo);
     animarJugadoresRemotos(tiempo);
     animarModelosFlotantes(tiempo);
@@ -887,17 +636,229 @@ function animate() {
     if (aiAgent) updateAI(tiempo);
     renderer.render(scene, camera);
 }
-
 async function cargarEscenario1() {
-    await poblarEscenarioAleatorio(28);
+    const florero = await cargarModelo3D("./models/florero", "florero", new THREE.Vector3(6, 6, 6));
+    florero.position.set(-27, 0, -6);
+    florero.rotation.y = Math.PI / 2;
+    scene.add(florero);
+    obstaculos.push({ modelo: florero });
+
+    const mostaza = await cargarModelo3D("./models/mostaza", "mostaza", new THREE.Vector3(0.8, 0.8, 0.8));
+    mostaza.position.set(6, 0, -17);
+    scene.add(mostaza);
+    obstaculos.push({ modelo: mostaza });
+
+    const mayonesa = await cargarModelo3D("./models/mayonesa", "mayonesa", new THREE.Vector3(0.8, 0.8, 0.8));
+    mayonesa.position.set(-5, 0, 5);
+    scene.add(mayonesa);
+    obstaculos.push({ modelo: mayonesa });
+
+    const saleros = await cargarModelo3D("./models/saleros", "saleros", new THREE.Vector3(20, 20, 20));
+    saleros.position.set(19, 0, 4);
+    saleros.rotation.y = Math.PI / 2;
+    scene.add(saleros);
+    obstaculos.push({ modelo: saleros });
+
+    const taza = await cargarModelo3D("./models/taza", "taza", new THREE.Vector3(15, 15, 15));
+    taza.position.set(-10, 0, 18);
+    taza.rotation.y = Math.PI / 2;
+    scene.add(taza);
+    obstaculos.push({ modelo: taza });
+
+    const jugo = await cargarModelo3D("./models/jugo", "jugo", new THREE.Vector3(10, 10, 10));
+    jugo.position.set(2, 0, 10);
+    jugo.rotation.y = Math.PI / 2;
+    scene.add(jugo);
+    obstaculos.push({ modelo: jugo });
 }
 
 async function cargarEscenario2() {
-    await poblarEscenarioAleatorio(34);
+    // SUPER POBLADO
+
+    const florero1 = await cargarModelo3D("./models/florero", "florero1", new THREE.Vector3(6, 6, 6));
+    florero1.position.set(-10, 0, -8);
+    florero1.rotation.y = Math.PI / 2;
+    scene.add(florero1);
+    obstaculos.push({ modelo: florero1 });
+
+    const florero2 = await cargarModelo3D("./models/florero", "florero2", new THREE.Vector3(6, 6, 6));
+    florero2.position.set(11, 0, 7);
+    florero2.rotation.y = Math.PI / 3;
+    scene.add(florero2);
+    obstaculos.push({ modelo: florero2 });
+
+    const mostaza1 = await cargarModelo3D("./models/mostaza", "mostaza1", new THREE.Vector3(0.8, 0.8, 0.8));
+    mostaza1.position.set(5, 0, -9);
+    scene.add(mostaza1);
+    obstaculos.push({ modelo: mostaza1 });
+
+    const mostaza2 = await cargarModelo3D("./models/mostaza", "mostaza2", new THREE.Vector3(0.8, 0.8, 0.8));
+    mostaza2.position.set(-12, 0, 3);
+    scene.add(mostaza2);
+    obstaculos.push({ modelo: mostaza2 });
+
+    const mayonesa1 = await cargarModelo3D("./models/mayonesa", "mayonesa1", new THREE.Vector3(0.8, 0.8, 0.8));
+    mayonesa1.position.set(-4, 0, 9);
+    scene.add(mayonesa1);
+    obstaculos.push({ modelo: mayonesa1 });
+
+    const mayonesa2 = await cargarModelo3D("./models/mayonesa", "mayonesa2", new THREE.Vector3(0.8, 0.8, 0.8));
+    mayonesa2.position.set(9, 0, -2);
+    scene.add(mayonesa2);
+    obstaculos.push({ modelo: mayonesa2 });
+
+    const saleros1 = await cargarModelo3D("./models/saleros", "saleros1", new THREE.Vector3(20, 20, 20));
+    saleros1.position.set(0, 0, -12);
+    saleros1.rotation.y = Math.PI / 2;
+    scene.add(saleros1);
+    obstaculos.push({ modelo: saleros1 });
+
+    const saleros2 = await cargarModelo3D("./models/saleros", "saleros2", new THREE.Vector3(20, 20, 20));
+    saleros2.position.set(13, 0, 2);
+    saleros2.rotation.y = Math.PI / 2;
+    scene.add(saleros2);
+    obstaculos.push({ modelo: saleros2 });
+
+    const taza1 = await cargarModelo3D("./models/taza", "taza1", new THREE.Vector3(15, 15, 15));
+    taza1.position.set(-9, 0, 11);
+    taza1.rotation.y = Math.PI / 2;
+    scene.add(taza1);
+    obstaculos.push({ modelo: taza1 });
+
+    const taza2 = await cargarModelo3D("./models/taza", "taza2", new THREE.Vector3(15, 15, 15));
+    taza2.position.set(3, 0, 5);
+    taza2.rotation.y = Math.PI / 4;
+    scene.add(taza2);
+    obstaculos.push({ modelo: taza2 });
+
+    const jugo1 = await cargarModelo3D("./models/jugo", "jugo1", new THREE.Vector3(10, 10, 10));
+    jugo1.position.set(-2, 0, -5);
+    jugo1.rotation.y = Math.PI / 2;
+    scene.add(jugo1);
+    obstaculos.push({ modelo: jugo1 });
+
+    const jugo2 = await cargarModelo3D("./models/jugo", "jugo2", new THREE.Vector3(10, 10, 10));
+    jugo2.position.set(10, 0, 12);
+    jugo2.rotation.y = Math.PI / 2;
+    scene.add(jugo2);
+    obstaculos.push({ modelo: jugo2 });
 }
 
 async function cargarEscenario3() {
-    await poblarEscenarioAleatorio(40);
+    // CASI VACÍO
+
+    const taza = await cargarModelo3D("./models/taza", "taza", new THREE.Vector3(15, 15, 15));
+    taza.position.set(7, 0, -6);
+    taza.rotation.y = Math.PI / 2;
+    scene.add(taza);
+    obstaculos.push({ modelo: taza });
+
+    const florero = await cargarModelo3D("./models/florero", "florero", new THREE.Vector3(6, 6, 6));
+    florero.position.set(-8, 0, 7);
+    florero.rotation.y = Math.PI / 2;
+    scene.add(florero);
+    obstaculos.push({ modelo: florero });
+
+    const saleros = await cargarModelo3D("./models/saleros", "saleros", new THREE.Vector3(20, 20, 20));
+    saleros.position.set(0, 0, 10);
+    saleros.rotation.y = Math.PI / 2;
+    scene.add(saleros);
+    obstaculos.push({ modelo: saleros });
+
+}
+
+async function cargarEscenarioSeleccionado() {
+    if (escenarioSeleccionado === "1") {
+        await cargarEscenario1();
+    } else if (escenarioSeleccionado === "2") {
+        await cargarEscenario2();
+    } else {
+        await cargarEscenario3();
+    }
+}
+
+function hayColisionConObstaculo() {
+    if (!jugadorLocal) return false;
+
+    jugadorBB.setFromObject(jugadorLocal);
+
+    for (const obstaculo of obstaculos) {
+        const obstaculoBB = new THREE.Box3();
+        obstaculoBB.setFromObject(obstaculo.modelo);
+
+        if (jugadorBB.intersectsBox(obstaculoBB)) {
+            console.log("Chocaste con:", obstaculo.modelo.name);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function revisarColisionPowerUps() {
+    if (!jugadorLocal) return;
+
+    jugadorBB.setFromObject(jugadorLocal);
+
+    for (let i = powerUps.length - 1; i >= 0; i--) {
+        const powerUp = powerUps[i];
+
+        const powerUpBB = new THREE.Box3();
+        powerUpBB.setFromObject(powerUp.modelo);
+
+        if (jugadorBB.intersectsBox(powerUpBB)) {
+            console.log("Agarraste power up:", powerUp.elemento);
+
+            scene.remove(powerUp.modelo);
+
+            powerUps.splice(i, 1);
+
+            const indexFlotante = modelosFlotantes.findIndex(
+                item => item.modelo === powerUp.modelo
+            );
+
+            if (indexFlotante !== -1) {
+                modelosFlotantes.splice(indexFlotante, 1);
+            }
+        }
+    }
+}
+
+function limpiarPowerUps() {
+    for (const powerUp of powerUps) {
+        scene.remove(powerUp.modelo);
+    }
+
+    powerUps.length = 0;
+
+    for (let i = modelosFlotantes.length - 1; i >= 0; i--) {
+        if (modelosFlotantes[i].modelo.name.includes("power")) {
+            modelosFlotantes.splice(i, 1);
+        }
+    }
+}
+
+async function crearPowerUpDesdeServidor(data) {
+    const modelo = await cargarModelo3D(
+        `./models/${data.modelo}`,
+        `${data.modelo}-power-${data.id}`,
+        new THREE.Vector3(0.15, 0.15, 0.15)
+    );
+
+    modelo.position.set(data.x, data.y, data.z);
+    scene.add(modelo);
+
+    registrarModeloFlotante(modelo, {
+        amplitud: 0.25,
+        velocidad: 1.5,
+        rotacionY: 0.8
+    });
+
+    powerUps.push({
+        id: data.id,
+        modelo,
+        elemento: data.elemento
+    });
 }
 
 async function init() {
@@ -913,6 +874,7 @@ async function init() {
 
     await cargarJugadorLocalModelo();
     await cargarEscenarioSeleccionado();
+
 
     // Modo de juego: leer elección de configuración (pvp | pvia)
     const modo = localStorage.getItem('modoJuego') || 'pvp';
