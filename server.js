@@ -51,7 +51,7 @@ const tiposPowerUps = [
 
 function generarPowerUps() {
   powerUps.length = 0;
-console.log("PowerUps generados:", powerUps);
+  console.log("PowerUps generados:", powerUps);
   for (let i = 0; i < 8; i++) {
     const tipo = tiposPowerUps[Math.floor(Math.random() * tiposPowerUps.length)];
 
@@ -193,7 +193,7 @@ app.get("/ranking", (req, res) => {
 
 io.on("connection", (socket) => {
   console.log("Usuario conectado:", socket.id);
-  socket.emit("powerUpsActualizadosSocket", powerUps);
+  socket.emit("powerUpsActualizados", powerUps);
 
   socket.on("Iniciar", (nombre) => {
     console.log("Nombre recibido:", nombre);
@@ -214,6 +214,20 @@ io.on("connection", (socket) => {
     console.log("Jugadores actuales:", jugadores);
     io.emit("listaJugadores", jugadores);
   });
+
+  socket.on("CambiarElemento", (data) => {
+    const jugador = jugadores.find(j => j.id === socket.id);
+    if (!jugador) return;
+
+    jugador.elemento = data.elemento;
+
+    io.emit("listaJugadores", jugadores);
+  });
+
+  socket.on("CrearRastro", (data) => {
+    console.log("Rastro recibido en server:", data);
+    socket.broadcast.emit("RastroCreado", data);
+  });;
 
   socket.on("Posicion", (posicion) => {
     const jugador = jugadores.find(j => j.id === socket.id);

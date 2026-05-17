@@ -74,6 +74,18 @@ const jugadoresRemotosEnCarga = new Set();
 const posicionesPendientesRemotos = {};
 let plantillaJugadorRemotoPromise = null;
 
+let elementoActual = "normal";
+
+const coloresElemento = {
+    fuego: 0xff3300,
+    agua: 0x00aaff,
+    hielo: 0x99ddff,
+    aire: 0xffffff,
+    normal: 0xaaaaaa
+};
+
+const rastros = [];
+
 function aplicarColorModelo(modelo, colorHex) {
     modelo.traverse((child) => {
         if (!child.isMesh) return;
@@ -279,6 +291,15 @@ function configurarSockets() {
         for (const data of listaPowerUps) {
             await crearPowerUpDesdeServidor(data);
         }
+    });
+
+    socket.on("RastroCreado", (data) => {
+        console.log("Rastro recibido en cliente:", data);
+
+        crearRastro(
+            new THREE.Vector3(data.x, data.y, data.z),
+            data.elemento
+        );
     });
 }
 
@@ -594,6 +615,15 @@ function moverJugador() {
 
         jugadorLocal.position.copy(posicionPropuesta);
 
+        crearRastro(jugadorLocal.position, elementoActual);
+
+        socket.emit("CrearRastro", {
+            x: jugadorLocal.position.x,
+            y: jugadorLocal.position.y,
+            z: jugadorLocal.position.z,
+            elemento: elementoActual
+        });
+
         if (hayColisionConObstaculo()) {
             jugadorLocal.position.copy(posicionAnterior);
             return;
@@ -798,6 +828,7 @@ function hayColisionConObstaculo() {
 function revisarColisionPowerUps() {
     if (!jugadorLocal) return;
 
+
     jugadorBB.setFromObject(jugadorLocal);
 
     for (let i = powerUps.length - 1; i >= 0; i--) {
@@ -808,6 +839,12 @@ function revisarColisionPowerUps() {
 
         if (jugadorBB.intersectsBox(powerUpBB)) {
             console.log("Agarraste power up:", powerUp.elemento);
+
+            elementoActual = powerUp.elemento;
+
+            socket.emit("CambiarElemento", {
+                elemento: elementoActual
+            });
 
             scene.remove(powerUp.modelo);
 
@@ -859,6 +896,33 @@ async function crearPowerUpDesdeServidor(data) {
         modelo,
         elemento: data.elemento
     });
+}
+
+function crearRastro(posicion, elemento) {
+    const color = coloresElemento[elemento] ?? coloresElemento.normal;
+
+    const geometry = new THREE.SphereGeometry(0.18, 12, 12);
+    const material = new THREE.MeshBasicMaterial({
+        color: color,
+        transparent: true,
+        opacity: 0.65
+    });
+
+    const rastro = new THREE.Mesh(geometry, material);
+    rastro.position.set(posicion.x, 0.08, posicion.z);
+
+    scene.add(rastro);
+
+    rastros.push(rastro);
+
+    setTimeout(() => {
+        scene.remove(rastro);
+        material.dispose();
+        geometry.dispose();
+
+        const index = rastros.indexOf(rastro);
+        if (index !== -1) rastros.splice(index, 1);
+    }, 2500);
 }
 
 async function init() {
