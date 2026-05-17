@@ -777,6 +777,7 @@ async function cargarJugadorLocalModelo() {
 function configurarTeclado() {
     window.addEventListener("keydown", (event) => {
         teclas[event.key.toLowerCase()] = true;
+        iniciarMusica();
     });
 
     window.addEventListener("keyup", (event) => {
@@ -1172,6 +1173,23 @@ function crearRastro(posicion, elemento) {
     gestorRastros.agregar(posicion.clone(), 'jugador', elemento);
 }
 
+let musicaIniciada = false;
+
+function iniciarMusica() {
+    if (musicaIniciada) return;
+    const bgMusic = document.getElementById('bgMusic');
+    if (bgMusic) {
+        // volumen va de 0 a 100, HTML audio.volume va de 0.0 a 1.0
+        const vol = localStorage.getItem('volumenGlobal') !== null ? localStorage.getItem('volumenGlobal') : 50;
+        bgMusic.volume = parseInt(vol) / 100;
+        bgMusic.play().then(() => {
+            musicaIniciada = true;
+        }).catch(err => {
+            console.log("No se pudo reproducir música automáticamente, esperando interacción", err);
+        });
+    }
+}
+
 async function init() {
     if (!nombreJugador) {
         alert("No se encontró el nombre del jugador.");
@@ -1185,6 +1203,7 @@ async function init() {
 
         configurarSockets();
         configurarTeclado();
+        iniciarMusica();
 
         await cargarJugadorLocalModelo();
         await cargarEscenarioSeleccionado();

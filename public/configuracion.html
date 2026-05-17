@@ -18,7 +18,7 @@
 
     <div class="mb-4">
         <label class="form-label">Volumen</label>
-        <input type="range" class="form-range" min="0" max="100">
+        <input id="volumenSlider" type="range" class="form-range" min="0" max="100">
     </div>
 
     <div class="mb-4">
@@ -57,13 +57,16 @@
     document.addEventListener('DOMContentLoaded', () => {
         const selModo = document.getElementById('modoJuegoSelect');
         const selDif = document.getElementById('dificultadSelect');
+        const volSlider = document.getElementById('volumenSlider');
         
         selModo.value = localStorage.getItem('modoJuego') || 'pvp';
         selDif.value = localStorage.getItem('dificultadJuego') || 'normal';
+        volSlider.value = localStorage.getItem('volumenGlobal') !== null ? localStorage.getItem('volumenGlobal') : 50;
 
         document.getElementById('guardarConf').addEventListener('click', () => {
             localStorage.setItem('modoJuego', selModo.value);
             localStorage.setItem('dificultadJuego', selDif.value);
+            localStorage.setItem('volumenGlobal', volSlider.value);
             // feedback rápido
             alert('Configuración guardada');
         });
