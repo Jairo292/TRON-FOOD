@@ -15,28 +15,28 @@
 
 
 <div class="hud">
-    <div>Vidas:<img src="iconos/vidas.png" class="icono-vida">
-    </div>
+
+    <div>Vidas: <span id="hud-vidas" style="display:inline"></span></div>
+    <div style="font-size: 1.1em; font-weight: bold; color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.5);">Puntaje: <span id="hud-puntaje">0</span></div>
+
     <div class="elemento-actual">
-  Elemento Actual:
-  <img id="icono-elemento-actual" src="iconos/salsa.png" class="icono-elemento">
-</div>
-   <div class="queue">
-  Cola:
-  <span id="cola-elementos">
-    <img src="iconos/salsa.png" class="icono-elemento">
-  </span>
-</div>
-<!--<div class="p-2">
-  <input id="idNombreJugador" type="text" placeholder="Tu nombre">
-  <button id="idBoton">Conectar</button>
-</div> -->
+        Elemento Actual:
+        <img id="icono-elemento-actual" src="iconos/salsa.png" class="icono-elemento">
+    </div>
+
+    <div class="queue">
+        Cola:
+        <span id="cola-elementos">
+            <img src="iconos/salsa.png" class="icono-elemento">
+        </span>
+    </div>
+
+    <div id="hud-ia" style="font-size:13px;opacity:0.8"></div>
 
     <button class="btn btn-outline-light btn-sm btn-custom" data-bs-toggle="modal" data-bs-target="#pausaModal">
         Pausa
     </button>
 
-    
 </div>
 
 <div class="area-juego">
@@ -77,7 +77,7 @@
       <p class="mb-3 opacity-75">¡Ganaste la ronda! Cocinaste.</p>
 
       <div class="d-grid gap-2">
-        <button type="button" class="btn btn-success btn-custom" data-bs-dismiss="modal">
+        <button type="button" class="btn btn-success btn-custom" data-bs-dismiss="modal" id="btnSiguienteRonda">
           Siguiente Ronda
         </button>
         <a href="index.html" class="btn btn-outline-light btn-custom">

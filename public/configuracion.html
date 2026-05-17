@@ -23,10 +23,9 @@
 
     <div class="mb-4">
         <label class="form-label">Dificultad</label>
-        <select class="form-select">
-            <option>Normal</option>
-            <option>Experto</option>
-            <option>Caos de Cocina</option>
+        <select id="dificultadSelect" class="form-select">
+            <option value="normal">Normal</option>
+            <option value="caos">Caos en Cocina</option>
         </select>
     </div>
 
@@ -56,12 +55,15 @@
 <script>
     // Inicializar selección desde localStorage
     document.addEventListener('DOMContentLoaded', () => {
-        const sel = document.getElementById('modoJuegoSelect');
-        const saved = localStorage.getItem('modoJuego') || 'pvp';
-        sel.value = saved;
+        const selModo = document.getElementById('modoJuegoSelect');
+        const selDif = document.getElementById('dificultadSelect');
+        
+        selModo.value = localStorage.getItem('modoJuego') || 'pvp';
+        selDif.value = localStorage.getItem('dificultadJuego') || 'normal';
 
         document.getElementById('guardarConf').addEventListener('click', () => {
-            localStorage.setItem('modoJuego', sel.value);
+            localStorage.setItem('modoJuego', selModo.value);
+            localStorage.setItem('dificultadJuego', selDif.value);
             // feedback rápido
             alert('Configuración guardada');
         });

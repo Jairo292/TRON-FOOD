@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
+import { GestorRastros } from "./rastros.js";
+import { AgentIA, ESTADO_IA } from "./ia.js";
 
 const socket = io();
 let nombreJugador = localStorage.getItem("nombreJugador") || "";
@@ -21,12 +23,157 @@ const jugadorBB = new THREE.Box3();
 const modelosFlotantes = [];
 const powerUps = [];
 let aiAgent = null;
-const AI_CONFIG = {
-    detectionRadius: 12,
-    fov: Math.PI / 3, // 60 grados (actualmente no usada)
-    speed: 0.06,
-    wanderSpeed: 0.015
+let agentIAMesh = null;
+let gestorRastros = null;
+let jugadorMuerto = false;
+
+// === SISTEMA DE COMBATE Y VIDAS (inline, sin dependencias de módulo) ===
+const COMBATE = {
+    fuego:  { gana: 'hielo',  pierde: 'agua'  },
+    agua:   { gana: 'fuego',  pierde: 'aire'  },
+    hielo:  { gana: 'aire',   pierde: 'fuego' },
+    aire:   { gana: 'agua',   pierde: 'hielo' }
 };
+function combateResultado(atk, def) {
+    const t = COMBATE[atk];
+    if (!t) return 'empata';
+    if (t.gana   === def) return 'gana';
+    if (t.pierde === def) return 'pierde';
+    return 'empata';
+}
+let vidasJugador = 3;
+let vidasIA = 3;
+let puntajeJugador = 0;
+let tDmgJugador = 0;
+let tDmgIA = 0;
+const INVUL_MS = 1400;
+
+function sumarPuntos(cantidad) {
+    puntajeJugador += cantidad;
+    const el = document.getElementById('hud-puntaje');
+    if (el) el.textContent = puntajeJugador;
+    
+    // Pequeño efecto visual en el texto
+    if (el) {
+        el.style.transform = 'scale(1.3)';
+        setTimeout(() => el.style.transform = 'scale(1)', 200);
+    }
+
+    if (nombreJugador && socket) {
+        socket.emit('GuardarPuntaje', {
+            nombreJugador: nombreJugador,
+            puntaje: puntajeJugador
+        });
+    }
+}
+
+function dañarJugador(idAtacante) {
+    if (jugadorMuerto) return;
+    const now = performance.now();
+    if (now - tDmgJugador < INVUL_MS) return;
+    tDmgJugador = now;
+    vidasJugador = Math.max(0, vidasJugador - 1);
+    _refrescarHUDJugador();
+    _flashPantalla('rgba(255,0,0,0.45)');
+    console.log('[COMBATE] Jugador pierde 1 vida. Quedan:', vidasJugador);
+    
+    if (vidasJugador <= 0) {
+        jugadorMuerto = true;
+        if (idAtacante) socket.emit("FuiEliminado", idAtacante);
+        setTimeout(() => new bootstrap.Modal(document.getElementById('perderModal')).show(), 700);
+    } else {
+        if (idAtacante) socket.emit("RecibiDano", idAtacante);
+    }
+}
+function dañarIA() {
+    if (!aiAgent || aiAgent.muerta) return;
+    const now = performance.now();
+    if (now - tDmgIA < INVUL_MS) return;
+    tDmgIA = now;
+    vidasIA = Math.max(0, vidasIA - 1);
+    _refrescarHUDIA();
+    console.log('[COMBATE] IA pierde 1 vida. Quedan:', vidasIA);
+    if (vidasIA <= 0) {
+        sumarPuntos(30);
+        aiAgent.muerta = true;
+        setTimeout(() => new bootstrap.Modal(document.getElementById('ganarModal')).show(), 700);
+    } else {
+        sumarPuntos(10);
+    }
+}
+function verificarCombate() {
+    if (!jugadorLocal) return;
+
+    // --- PVE (VS IA) ---
+    if (aiAgent && !aiAgent.muerta) {
+        const dist = aiAgent.mesh.position.distanceTo(jugadorLocal.position);
+        if (dist < 2.0) {
+            const res = combateResultado(aiAgent.elementoIA, elementoActual);
+            if (res === 'gana')   dañarJugador('IA');
+            else if (res === 'pierde') dañarIA();
+        }
+        if (gestorRastros) {
+            const hit2 = gestorRastros.detectarColision(aiAgent.mesh.position, 'IA');
+            if (hit2 && hit2.propietario === 'jugador') {
+                const res3 = combateResultado(hit2.elemento, aiAgent.elementoIA);
+                if (res3 === 'gana') dañarIA();
+            }
+        }
+    }
+
+    // --- PVP (VS OTROS JUGADORES) ---
+    for (const id in jugadoresRemotos) {
+        if (id === 'IA') continue;
+        const remoto = jugadoresRemotos[id];
+        const elementoRemoto = remoto.userData.elemento || 'normal';
+        
+        // Colisión cuerpo a cuerpo con otro jugador
+        const dist = remoto.position.distanceTo(jugadorLocal.position);
+        if (dist < 2.0) {
+            const res = combateResultado(elementoRemoto, elementoActual);
+            if (res === 'gana') dañarJugador(id); // El otro te gana -> pierdes vida.
+            // Si el otro pierde, él calculará su propio daño en su cliente, no se lo hacemos nosotros.
+        }
+    }
+
+    // --- COLISIÓN CON CUALQUIER RASTRO (IA o PVP) ---
+    if (gestorRastros && !jugadorMuerto) {
+        // Detecta si YO choco con un rastro ajeno (cualquiera que no sea 'jugador')
+        const hit = gestorRastros.detectarColision(jugadorLocal.position, 'jugador');
+        if (hit) {
+            const res2 = combateResultado(hit.elemento, elementoActual);
+            if (res2 === 'gana') dañarJugador(hit.propietario); // El rastro ajeno me gana -> pierdo vida.
+        }
+    }
+}
+function _refrescarHUDJugador() {
+    const el = document.getElementById('hud-vidas');
+    if (!el) return;
+    let h = '';
+    for (let i = 0; i < 3; i++) h += i < vidasJugador ? '❤️ ' : '🖤 ';
+    el.innerHTML = h;
+}
+function _refrescarHUDIA() {
+    const el = document.getElementById('hud-ia');
+    if (!el) return;
+    const elem = aiAgent ? aiAgent.elementoIA : '?';
+    let h = '';
+    for (let i = 0; i < 3; i++) h += i < vidasIA ? '❤️' : '🖤';
+    el.textContent = 'IA • ' + elem + ' • ' + h;
+}
+function _flashPantalla(color) {
+    let ov = document.getElementById('dmg-overlay');
+    if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'dmg-overlay';
+        ov.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;transition:background 0.12s ease';
+        document.body.appendChild(ov);
+    }
+    ov.style.background = color;
+    setTimeout(() => { ov.style.background = 'transparent'; }, 280);
+}
+// ============================================================
+
 const RENDER_CONFIG = {
     pixelRatioMax: 1.25
 };
@@ -74,8 +221,10 @@ const jugadoresRemotosEnCarga = new Set();
 const posicionesPendientesRemotos = {};
 let plantillaJugadorRemotoPromise = null;
 
-let elementoActual = "normal";
-let colaElementos = [];
+// Elementos válidos para asignar al inicio
+const ELEMENTOS_REALES = ["fuego", "agua", "hielo", "aire"];
+let elementoActual = ELEMENTOS_REALES[Math.floor(Math.random() * ELEMENTOS_REALES.length)];
+let colaElementos = [elementoActual];
 
 const mapeoElementoIcono = {
     fuego: "salsa",
@@ -86,11 +235,11 @@ const mapeoElementoIcono = {
 };
 
 const coloresElemento = {
-    fuego: 0xff3300,
-    agua: 0x00aaff,
-    hielo: 0x99ddff,
-    aire: 0xffffff,
-    normal: 0xaaaaaa
+    fuego:  0xff3300,
+    agua:   0xffee00,
+    hielo:  0x55ddff,
+    aire:   0xdddddd,
+    normal: 0x888888
 };
 
 const rastros = [];
@@ -315,11 +464,16 @@ function configurarSockets() {
         console.log("Conectado al servidor");
 
         socket.emit("Iniciar", nombreJugador);
+        socket.emit("CambiarElemento", { elemento: elementoActual });
         conectado = true;
     });
 
     socket.on("listaJugadores", (lista) => {
         actualizarJugadoresRemotos(lista);
+    });
+
+    socket.on("SumaPuntos", (puntos) => {
+        sumarPuntos(puntos);
     });
 
     socket.on("powerUpsActualizados", async (listaPowerUps) => {
@@ -333,12 +487,8 @@ function configurarSockets() {
     });
 
     socket.on("RastroCreado", (data) => {
-        console.log("Rastro recibido en cliente:", data);
-
-        crearRastro(
-            new THREE.Vector3(data.x, data.y, data.z),
-            data.elemento
-        );
+        if (!gestorRastros) return;
+        gestorRastros.agregar(new THREE.Vector3(data.x, data.y, data.z), data.id, data.elemento);
     });
 }
 
@@ -378,13 +528,22 @@ function actualizarJugadoresRemotos(lista) {
         }
 
         if (jugadoresRemotos[jugador.id]) {
-            const data = jugadoresRemotos[jugador.id].userData.animacionEnemigo;
+            const mesh = jugadoresRemotos[jugador.id];
+            mesh.userData.elemento = jugador.elemento || 'normal';
+            
+            // Actualizar color del jugador remoto si cambió de elemento
+            if (mesh.userData.elementoAnterior !== mesh.userData.elemento) {
+                aplicarColorModelo(mesh, coloresElemento[mesh.userData.elemento] || coloresElemento.normal);
+                mesh.userData.elementoAnterior = mesh.userData.elemento;
+            }
+
+            const data = mesh.userData.animacionEnemigo;
             if (data) {
                 data.objetivoX = jugador.x;
                 data.objetivoZ = jugador.z;
                 data.baseY = jugador.y;
             } else {
-                jugadoresRemotos[jugador.id].position.set(jugador.x, jugador.y, jugador.z);
+                mesh.position.set(jugador.x, jugador.y, jugador.z);
             }
         }
     }
@@ -399,65 +558,53 @@ function actualizarJugadoresRemotos(lista) {
     }
 }
 
-// --- IA (simple) ---
+// --- IA Avanzada (AgentIA) ---
 async function spawnAI() {
     if (aiAgent) return;
     try {
-        // Cargar específicamente el modelo del tenedor para la IA
-        const modeloIA = await cargarModelo3D("./models/tenedor", "ia-tenedor", new THREE.Vector3(2, 2, 2));
-        // Aplicar color rojo para diferenciar
+        const modeloIA = await cargarModelo3D("./models/cuchara", "ia-cuchara", new THREE.Vector3(2, 2, 2));
         aplicarColorModelo(modeloIA, 0xff4d6d);
-        // Posicionar IA en un lugar aleatorio lejos del jugador
-        const x = (Math.random() * 2 - 1) * 20;
-        const z = (Math.random() * 2 - 1) * 20;
+        const x = (Math.random() * 2 - 1) * 18;
+        const z = (Math.random() * 2 - 1) * 18;
         modeloIA.position.set(x, jugadorBaseY, z);
         modeloIA.rotation.x = -Math.PI / 2;
         modeloIA.name = 'IA';
         inicializarAnimacionEnemigo(modeloIA, { x, y: jugadorBaseY, z });
-        aiAgent = {
-            id: 'IA',
-            mesh: modeloIA,
-            objetivo: null,
-            wanderTarget: null
-        };
-        jugadoresRemotos[aiAgent.id] = modeloIA;
+        agentIAMesh = modeloIA;
+        jugadoresRemotos['IA'] = modeloIA;
         modeloIA.traverse((child) => { if (child.isMesh) child.castShadow = true; });
         scene.add(modeloIA);
-        console.log('IA (tenedor rojo) generada en', x, z);
+
+        // Crear AgentIA con obstaculos y gestor de rastros
+        aiAgent = new AgentIA(modeloIA, obstaculos, gestorRastros);
+        aiAgent.elementoIA = ELEMENTOS_REALES[Math.floor(Math.random() * ELEMENTOS_REALES.length)];
+        aiAgent.vidasIA    = 3;
+        vidasIA = 3;
+        _refrescarHUDIA();
+        console.log('[IA] Generada en', x, z, '| Elemento:', aiAgent.elementoIA);
     } catch (e) {
         console.error('No se pudo crear IA:', e);
     }
 }
 
 function updateAI(tiempo) {
-    if (!aiAgent || !jugadorLocal) return;
-    const ia = aiAgent.mesh;
-    // Distancia al jugador
-    const distancia = ia.position.distanceTo(jugadorLocal.position);
+    if (!aiAgent || !jugadorLocal || aiAgent.muerta) return;
 
-    // Direccion hacia jugador
-    const dir = new THREE.Vector3().subVectors(jugadorLocal.position, ia.position).setY(0).normalize();
+    aiAgent.setElementoJugador(elementoActual);
+    aiAgent.actualizar(
+        tiempo,
+        jugadorLocal.position,
+        elementoActual,
+        vidasJugador,
+        powerUps
+    );
 
-    if (distancia <= AI_CONFIG.detectionRadius) {
-        // Perseguir al jugador (por proximidad)
-        ia.position.x += dir.x * AI_CONFIG.speed;
-        ia.position.z += dir.z * AI_CONFIG.speed;
-        // rotar IA hacia jugador
-        ia.lookAt(jugadorLocal.position.x, ia.position.y, jugadorLocal.position.z);
-    } else {
-        // Wander aleatorio
-        if (!aiAgent.wanderTarget || ia.position.distanceTo(aiAgent.wanderTarget) < 1) {
-            aiAgent.wanderTarget = new THREE.Vector3(
-                ia.position.x + (Math.random() * 2 - 1) * 6,
-                ia.position.y,
-                ia.position.z + (Math.random() * 2 - 1) * 6
-            );
-        }
-        const dirW = new THREE.Vector3().subVectors(aiAgent.wanderTarget, ia.position).setY(0).normalize();
-        ia.position.x += dirW.x * AI_CONFIG.wanderSpeed;
-        ia.position.z += dirW.z * AI_CONFIG.wanderSpeed;
-        ia.lookAt(aiAgent.wanderTarget.x, ia.position.y, aiAgent.wanderTarget.z);
+    // Rastro de la IA
+    if (gestorRastros) {
+        gestorRastros.agregar(aiAgent.mesh.position.clone(), 'IA', aiAgent.elementoIA);
     }
+
+    _refrescarHUDIA();
 }
 
 function crearEscena() {
@@ -668,6 +815,8 @@ function moverJugador() {
             return;
         }
 
+        // (La colisión se maneja centralmente en verificarCombate)
+
         const ahora = performance.now();
         if (conectado && (ahora - ultimaEmisionPosicion >= RED_CONFIG.intervaloEmisionPosicionMs)) {
             ultimaEmisionPosicion = ahora;
@@ -696,13 +845,24 @@ function animate() {
     const tiempo = clock.getElapsedTime();
 
     animarJugadorLocal(tiempo);
-    moverJugador();
-    revisarColisionPowerUps();
+
+    if (!jugadorMuerto) {
+        moverJugador();
+        revisarColisionPowerUps();
+    }
+
     animarWalkLateralJugador(tiempo);
     animarJugadoresRemotos(tiempo);
     animarModelosFlotantes(tiempo);
     actualizarCamaraJugadorLocal();
+
     if (aiAgent) updateAI(tiempo);
+
+    verificarCombate();
+
+    // Tick del gestor de rastros (limpia expirados)
+    if (gestorRastros) gestorRastros.actualizar();
+
     renderer.render(scene, camera);
 }
 async function cargarEscenario1() {
@@ -947,30 +1107,8 @@ async function crearPowerUpDesdeServidor(data) {
 }
 
 function crearRastro(posicion, elemento) {
-    const color = coloresElemento[elemento] ?? coloresElemento.normal;
-
-    const geometry = new THREE.SphereGeometry(0.18, 12, 12);
-    const material = new THREE.MeshBasicMaterial({
-        color: color,
-        transparent: true,
-        opacity: 0.65
-    });
-
-    const rastro = new THREE.Mesh(geometry, material);
-    rastro.position.set(posicion.x, 0.08, posicion.z);
-
-    scene.add(rastro);
-
-    rastros.push(rastro);
-
-    setTimeout(() => {
-        scene.remove(rastro);
-        material.dispose();
-        geometry.dispose();
-
-        const index = rastros.indexOf(rastro);
-        if (index !== -1) rastros.splice(index, 1);
-    }, 2500);
+    if (!gestorRastros) return;
+    gestorRastros.agregar(posicion.clone(), 'jugador', elemento);
 }
 
 async function init() {
@@ -982,22 +1120,52 @@ async function init() {
 
     try {
         crearEscena();
+        gestorRastros = new GestorRastros(scene);
+
         configurarSockets();
         configurarTeclado();
 
         await cargarJugadorLocalModelo();
         await cargarEscenarioSeleccionado();
 
-
-        // Modo de juego: leer elección de configuración (pvp | pvia)
         const modo = localStorage.getItem('modoJuego') || 'pvp';
         if (modo === 'pvia') {
             await spawnAI();
+        } else {
+            vidasJugador = 3;
+            _refrescarHUDJugador();
         }
 
-        // Inicializar UI de elementos
-        actualizarUIElementos();
+        // Configurar botones de reinicio
+        document.getElementById('btnReintentar')?.addEventListener('click', () => {
+            vidasJugador = 3;
+            jugadorMuerto = false;
+            puntajeJugador = 0; // Reiniciar puntos al perder
+            const el = document.getElementById('hud-puntaje');
+            if (el) el.textContent = '0';
+            _refrescarHUDJugador();
+            if (gestorRastros) gestorRastros.limpiarPropietario('jugador');
+            if (jugadorLocal) jugadorLocal.position.set(0, jugadorBaseY, 0);
+        });
 
+        document.getElementById('btnSiguienteRonda')?.addEventListener('click', () => {
+            if (aiAgent) {
+                aiAgent.muerta = false;
+                vidasIA = 3;
+                aiAgent.elementoIA = ELEMENTOS_REALES[Math.floor(Math.random() * ELEMENTOS_REALES.length)];
+                _refrescarHUDIA();
+                if (gestorRastros) gestorRastros.limpiarPropietario('IA');
+                const x = (Math.random() * 2 - 1) * 18;
+                const z = (Math.random() * 2 - 1) * 18;
+                aiAgent.mesh.position.set(x, jugadorBaseY, z);
+            }
+            vidasJugador = 3;
+            jugadorMuerto = false;
+            _refrescarHUDJugador();
+            if (gestorRastros) gestorRastros.limpiarPropietario('jugador');
+        });
+
+        actualizarUIElementos();
         animate();
     } catch (error) {
         console.error("Error en init:", error);
