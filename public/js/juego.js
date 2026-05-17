@@ -188,9 +188,9 @@ const FLOTACION_JUGADOR = {
     velocidad: 2.0
 };
 const FONDO_ESCENARIO = {
-    "1": 0x1f2432,
-    "2": 0x203025,
-    "3": 0x2f1f29
+    "1": 0x76b5c5, // Celeste vivo
+    "2": 0xffb7b2, // Rosa pastel cálido
+    "3": 0xe2f0cb  // Verde manzana claro
 };
 const ANIMACION_WALK_LATERAL = {
     inclinacionMax: 0.35,
@@ -553,7 +553,7 @@ function actualizarJugadoresRemotos(lista) {
 
     for (const id in jugadoresRemotos) {
         // No eliminar la IA local creada en cliente
-        if (!idsActivos.includes(id) && !(aiAgent && aiAgent.id === id)) {
+        if (!idsActivos.includes(id) && id !== 'IA') {
             scene.remove(jugadoresRemotos[id]);
             delete jugadoresRemotos[id];
             delete posicionesPendientesRemotos[id];
@@ -565,7 +565,8 @@ function actualizarJugadoresRemotos(lista) {
 async function spawnAI() {
     if (aiAgent) return;
     try {
-        const modeloIA = await cargarModelo3D("./models/cuchara", "ia-cuchara", new THREE.Vector3(2, 2, 2));
+        // Reducimos un poco el tamaño de la cuchara (3.5x) para que sea manejable
+        const modeloIA = await cargarModelo3D("./models/cuchara", "ia-cuchara", new THREE.Vector3(3.5, 3.5, 3.5));
         aplicarColorModelo(modeloIA, 0xff4d6d);
         const x = (Math.random() * 2 - 1) * 18;
         const z = (Math.random() * 2 - 1) * 18;
@@ -636,17 +637,30 @@ function crearEscena() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     contenedor.appendChild(renderer.domElement);
 
-    ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    // 1. Luz de Hemisferio (mezcla luz cálida arriba con reflejos fríos abajo, clave en estilo cartoon)
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x445588, 0.6);
+    hemiLight.position.set(0, 20, 0);
+    scene.add(hemiLight);
+
+    // 2. Luz Ambiental suave y cálida para rellenar huecos oscuros
+    ambientLight = new THREE.AmbientLight(0xffeacc, 0.5);
     scene.add(ambientLight);
 
-    directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    directionalLight.position.set(5, 10, 7);
+    // 3. Luz Direccional Fuerte (Sol / Lámpara principal), proyecta sombras nítidas
+    directionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    directionalLight.position.set(12, 25, 8);
     directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.set(1024, 1024);
+    directionalLight.shadow.mapSize.set(2048, 2048); // Mayor resolución
+    directionalLight.shadow.camera.left = -25;
+    directionalLight.shadow.camera.right = 25;
+    directionalLight.shadow.camera.top = 25;
+    directionalLight.shadow.camera.bottom = -25;
+    directionalLight.shadow.bias = -0.0005;
     scene.add(directionalLight);
 
-    spotLight = new THREE.SpotLight(0xfff2c0, 1.5, 90, Math.PI / 6, 0.18, 1);
-    spotLight.position.set(0, 20, 15);
+    // 4. SpotLight vibrante para centrar la atención en la zona de juego
+    spotLight = new THREE.SpotLight(0xffaa44, 1.8, 60, Math.PI / 4.5, 0.4, 1.2);
+    spotLight.position.set(-5, 18, 12);
     spotLight.target.position.set(0, 0, 0);
     spotLight.castShadow = true;
     spotLight.shadow.mapSize.set(1024, 1024);
@@ -881,6 +895,19 @@ function animate() {
                 }
                 
                 console.log("[CAOS] Elemento rotado a:", elementoActual);
+
+                // Si estamos jugando contra la IA, la IA cambia al elemento que nos gana
+                if (aiAgent && !aiAgent.muerta) {
+                    // El elemento que vence a nuestro nuevo elementoActual es COMBATE[elementoActual].pierde
+                    const elementoContraJugador = COMBATE[elementoActual].pierde;
+                    aiAgent.elementoIA = elementoContraJugador;
+                    
+                    // Actualizar color de la IA visualmente
+                    aplicarColorModelo(aiAgent.mesh, coloresElemento[elementoContraJugador] || coloresElemento.normal);
+                    _refrescarHUDIA();
+                    
+                    console.log("[CAOS] IA rotada a:", elementoContraJugador, "para intentar vencer a", elementoActual);
+                }
             }
         }
     }
