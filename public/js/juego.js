@@ -192,6 +192,11 @@ const FONDO_ESCENARIO = {
     "2": 0x151b24, // Azul muy oscuro (tétrico)
     "3": 0x080404  // Casi negro / pesadilla
 };
+const TEXTURA_MESA_ESCENARIO = {
+    "1": "./mesa.png",
+    "2": "./mesa2.png",
+    "3": "./mesa.jpg"
+};
 const ANIMACION_WALK_LATERAL = {
     inclinacionMax: 0.35,
     oscilacionYaw: 0.12,
@@ -729,7 +734,8 @@ function crearEscena() {
     }
 
     const textureLoader = new THREE.TextureLoader();
-    const texturaPiso = textureLoader.load("./mesa.png");
+    const rutaTexturaMesa = TEXTURA_MESA_ESCENARIO[escenarioSeleccionado] || "./mesa.png";
+    const texturaPiso = textureLoader.load(rutaTexturaMesa);
 
     texturaPiso.wrapS = THREE.RepeatWrapping;
     texturaPiso.wrapT = THREE.RepeatWrapping;
@@ -1119,6 +1125,36 @@ async function cargarEscenario2() {
     jugo2.rotation.y = Math.PI / 2;
     scene.add(jugo2);
     obstaculos.push({ modelo: jugo2 });
+
+    const arana = await cargarModelo3D("./models/arana", "arana", new THREE.Vector3(2, 2, 2));
+    arana.position.set(-18, 0, -14);
+    arana.rotation.y = Math.PI / 2;
+    scene.add(arana);
+    obstaculos.push({ modelo: arana });
+
+    const arana1 = await cargarModelo3D("./models/arana", "arana1", new THREE.Vector3(2, 2, 2));
+    arana1.position.set(-18, 0, -14);
+    arana1.rotation.y = Math.PI / 2;
+    scene.add(arana1);
+    obstaculos.push({ modelo: arana1 });
+
+    const arana2 = await cargarModelo3D("./models/arana", "arana2", new THREE.Vector3(1.7, 1.7, 1.7));
+    arana2.position.set(-6, 0, -15);
+    arana2.rotation.y = Math.PI;
+    scene.add(arana2);
+    obstaculos.push({ modelo: arana2 });
+
+    const arana3 = await cargarModelo3D("./models/arana", "arana3", new THREE.Vector3(2.2, 2.2, 2.2));
+    arana3.position.set(16, 0, -8);
+    arana3.rotation.y = Math.PI / 4;
+    scene.add(arana3);
+    obstaculos.push({ modelo: arana3 });
+
+    const arana4 = await cargarModelo3D("./models/arana", "arana4", new THREE.Vector3(1.5, 1.5, 1.5));
+    arana4.position.set(2, 0, 15);
+    arana4.rotation.y = -Math.PI / 2;
+    scene.add(arana4);
+    obstaculos.push({ modelo: arana4 });
 }
 
 async function cargarEscenario3() {
