@@ -247,7 +247,7 @@ const coloresElemento = {
     fuego:  0xff3300,
     agua:   0xffee00,
     hielo:  0x55ddff,
-    aire:   0xdddddd,
+    aire:   0xff69b4,
     normal: 0x888888
 };
 
@@ -870,7 +870,7 @@ function configurarTeclado() {
 function moverJugador() {
     if (!jugadorLocal) return;
 
-    const velocidad = 0.08;
+    const velocidad = 0.30;
     const desplazamiento = new THREE.Vector3();
     let seMovio = false;
     let seRoto = false;

@@ -35,7 +35,7 @@ const COLORES_ELEMENTO = {
     fuego:  0xff3300,
     agua:   0xffee00,
     hielo:  0x55ddff,
-    aire:   0xdddddd,
+    aire:   0xff1493,
     normal: 0x888888
 };
 
