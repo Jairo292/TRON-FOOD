@@ -17,12 +17,12 @@ import { ELEMENTOS } from "./elementos.js";
 /* ── Configuración ───────────────────────────────────────── */
 
 const CFG = {
-    radioRastro:     0.45,   // tamaño visual del humo
-    radioColision:   0.50,   // radio para detección de choque (generoso)
+    radioRastro: 0.45,   // tamaño visual del humo
+    radioColision: 0.50,   // radio para detección de choque (generoso)
     distanciaMinima: 0.40,   // solo crear segmento si se movió esta distancia
-    vidaRastroMs:    4000,   // cuánto dura un rastro (4 segundos)
-    maxRastros:      280,    // máximo total en escena
-    alturaRastro:    0.2     // Y fija sobre el piso
+    vidaRastroMs: 4000,   // cuánto dura un rastro (4 segundos)
+    maxRastros: 280,    // máximo total en escena
+    alturaRastro: 0.2     // Y fija sobre el piso
 };
 
 /* ── Geometría compartida (humo) ───────────── */
@@ -32,10 +32,10 @@ const GEO_RASTRO = new THREE.SphereGeometry(CFG.radioRastro, 12, 12);
 /* ── Colores por elemento ─────────────────────────────────── */
 
 const COLORES_ELEMENTO = {
-    fuego:  0xff3300,
-    agua:   0xffee00,
-    hielo:  0x55ddff,
-    aire:   0xff1493,
+    fuego: 0xff3300,
+    agua: 0xffee00,
+    hielo: 0x55ddff,
+    aire: 0xff1493,
     normal: 0x888888
 };
 
@@ -46,9 +46,9 @@ const materialesBase = {};
 function obtenerMaterial(elemento) {
     if (materialesBase[elemento]) return materialesBase[elemento];
     const hex = COLORES_ELEMENTO[elemento] ?? COLORES_ELEMENTO.normal;
-    const mat = new THREE.MeshBasicMaterial({ 
-        color: hex, 
-        transparent: true, 
+    const mat = new THREE.MeshBasicMaterial({
+        color: hex,
+        transparent: true,
         opacity: 0.4,
         blending: THREE.AdditiveBlending,
         depthWrite: false
@@ -64,7 +64,7 @@ export class GestorRastros {
      * @param {THREE.Scene} scene
      */
     constructor(scene) {
-        this.scene    = scene;
+        this.scene = scene;
         this.segmentos = [];              // { mesh, propietario, elemento, expira }
         this._ultimaPos = {};             // propietario → THREE.Vector3
     }
@@ -91,10 +91,10 @@ export class GestorRastros {
             this._eliminarSegmento(0);
         }
 
-        const mat  = obtenerMaterial(elemento); // Material compartido (sin clonar!)
+        const mat = obtenerMaterial(elemento); // Material compartido (sin clonar!)
         const mesh = new THREE.Mesh(GEO_RASTRO, mat);
         mesh.position.set(posicion.x, CFG.alturaRastro, posicion.z);
-        mesh.castShadow    = false;
+        mesh.castShadow = false;
         mesh.receiveShadow = false;
         mesh.userData = { propietario, elemento };
 
@@ -104,14 +104,14 @@ export class GestorRastros {
         this.segmentos.push({ mesh, propietario, elemento, expira });
 
         setTimeout(() => this._iniciarFade(mesh), CFG.vidaRastroMs - 600);
-        setTimeout(() => this._eliminarPorMesh(mesh),  CFG.vidaRastroMs);
+        setTimeout(() => this._eliminarPorMesh(mesh), CFG.vidaRastroMs);
     }
 
     /** Detectar colisión de una posición (jugador/IA) con rastros ajenos */
     detectarColision(posicion, propietarioPropio) {
         const r2 = CFG.radioColision * CFG.radioColision;
-        const x  = posicion.x;
-        const z  = posicion.z;
+        const x = posicion.x;
+        const z = posicion.z;
 
         for (const seg of this.segmentos) {
             if (seg.propietario === propietarioPropio) continue;
@@ -169,14 +169,14 @@ export class GestorRastros {
     _iniciarFade(mesh) {
         if (!mesh.parent) return;
         const duracion = 600;
-        const inicio   = performance.now();
+        const inicio = performance.now();
 
         (function fade() {
             if (!mesh.parent) return;
             const t = (performance.now() - inicio) / duracion;
-            if (t >= 1) { 
+            if (t >= 1) {
                 mesh.scale.set(0, 0, 0);
-                return; 
+                return;
             }
             // En vez de alterar la opacidad del material compartido, reducimos su escala hacia cero de forma fluida
             const s = Math.max(0, 1 - t);

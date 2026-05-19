@@ -136,7 +136,7 @@ async function login() {
                 const modalEl = document.getElementById('loginModal');
                 const modal = bootstrap.Modal.getInstance(modalEl);
                 if (modal) modal.hide();
-            } catch (e) {}
+            } catch (e) { }
 
             _mostrarToast('¡Bienvenido, ' + data.usuario + '! 🔥');
 
@@ -178,20 +178,20 @@ async function fbLogin() {
         return;
     }
 
-    FB.getLoginStatus(function(response) {
+    FB.getLoginStatus(function (response) {
         if (response.status === 'connected') {
             handleFBResponse(response);
         } else {
-            FB.login(function(resp) {
+            FB.login(function (resp) {
                 if (resp.authResponse) handleFBResponse(resp);
                 else alert('Inicio de sesión cancelado');
-            }, {scope: 'public_profile'});
+            }, { scope: 'public_profile' });
         }
     });
 }
 
 function handleFBResponse(resp) {
-    FB.api('/me', {fields: 'name'}, async function(profile) {
+    FB.api('/me', { fields: 'name' }, async function (profile) {
         if (!profile || profile.error) {
             console.log(profile && profile.error);
             alert('No se pudo obtener datos de Facebook');
@@ -206,8 +206,8 @@ function handleFBResponse(resp) {
             // Intenta registrar (si ya existe, la API puede devolver error y procederemos a login)
             await fetch('/registro', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({usuario, correo, password})
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario, correo, password })
             });
         } catch (e) {
             console.log('registro fb error', e);
@@ -216,8 +216,8 @@ function handleFBResponse(resp) {
         try {
             const loginRes = await fetch('/login', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({correo, password})
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ correo, password })
             });
 
             const data = await loginRes.json();
@@ -232,7 +232,7 @@ function handleFBResponse(resp) {
                     const modalEl = document.getElementById('loginModal');
                     const modal = bootstrap.Modal.getInstance(modalEl);
                     if (modal) modal.hide();
-                } catch (e) {}
+                } catch (e) { }
 
                 _mostrarToast('¡Bienvenido, ' + data.usuario + '! 🔥');
             } else {

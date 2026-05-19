@@ -1,108 +1,114 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Configuración - Kitchen Arena</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<link href="configuracion.css" rel="stylesheet">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - Kitchen Arena</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link href="configuracion.css" rel="stylesheet">
 </head>
 
 <body>
 
-<!-- Música de fondo -->
-<audio id="bgMusic" loop>
-    <source src="musica.mp3" type="audio/mpeg">
-</audio>
+    <!-- Música de fondo -->
+    <audio id="bgMusic" loop>
+        <source src="musica.mp3" type="audio/mpeg">
+    </audio>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        let musicaIniciada = false;
-        const bgMusic = document.getElementById('bgMusic');
-        
-        function iniciarMusica() {
-            if (musicaIniciada || !bgMusic) return;
-            const vol = localStorage.getItem('volumenGlobal') !== null ? localStorage.getItem('volumenGlobal') : 50;
-            bgMusic.volume = parseInt(vol) / 100;
-            bgMusic.play().then(() => {
-                musicaIniciada = true;
-            }).catch(e => console.log("Esperando interacción para reproducir música"));
-        }
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let musicaIniciada = false;
+            const bgMusic = document.getElementById('bgMusic');
 
-        iniciarMusica();
-        document.body.addEventListener('click', iniciarMusica, { once: true });
-        
-        // También actualizar el volumen en tiempo real cuando se mueva el slider
-        const sliderVol = document.getElementById('volumenSlider');
-        if (sliderVol) {
-            sliderVol.addEventListener('input', (e) => {
-                if (bgMusic) bgMusic.volume = parseInt(e.target.value) / 100;
-            });
-        }
-    });
-</script>
+            function iniciarMusica() {
+                if (musicaIniciada || !bgMusic) return;
+                const vol = localStorage.getItem('volumenGlobal') !== null ? localStorage.getItem('volumenGlobal') : 50;
+                bgMusic.volume = parseInt(vol) / 100;
+                bgMusic.play().then(() => {
+                    musicaIniciada = true;
+                }).catch(e => console.log("Esperando interacción para reproducir música"));
+            }
 
-<div class="caja-menu">
+            iniciarMusica();
+            document.body.addEventListener('click', iniciarMusica, { once: true });
 
-    <h2 class="titulo-seccion">Configuración</h2>
-
-    <div class="mb-4">
-        <label class="form-label">Volumen</label>
-        <input id="volumenSlider" type="range" class="form-range" min="0" max="100">
-    </div>
-
-    <div class="mb-4">
-        <label class="form-label">Dificultad</label>
-        <select id="dificultadSelect" class="form-select">
-            <option value="normal">Normal</option>
-            <option value="caos">Caos en Cocina</option>
-        </select>
-    </div>
-
-    <div class="mb-4">
-        <label class="form-label">Modo de Juego</label>
-        <select id="modoJuegoSelect" class="form-select">
-            <option value="pvp">1 vs 1 Local</option>
-            <option value="pvia">Jugador vs IA</option>
-        </select>
-    </div>
-
-    <div class="mb-4">
-        <label class="form-label">Controles</label>
-        <p class="small opacity-75">
-            Jugador 1: WASD<br>
-            Jugador 2: Flechas
-        </p>
-    </div>
-
-    <div class="d-grid gap-2">
-        <button id="guardarConf" class="btn btn-success btn-custom">Guardar</button>
-        <a href="index.html" class="btn btn-secondary btn-custom">Volver</a>
-    </div>
-
-</div>
-
-<script>
-    // Inicializar selección desde localStorage
-    document.addEventListener('DOMContentLoaded', () => {
-        const selModo = document.getElementById('modoJuegoSelect');
-        const selDif = document.getElementById('dificultadSelect');
-        const volSlider = document.getElementById('volumenSlider');
-        
-        selModo.value = localStorage.getItem('modoJuego') || 'pvp';
-        selDif.value = localStorage.getItem('dificultadJuego') || 'normal';
-        volSlider.value = localStorage.getItem('volumenGlobal') !== null ? localStorage.getItem('volumenGlobal') : 50;
-
-        document.getElementById('guardarConf').addEventListener('click', () => {
-            localStorage.setItem('modoJuego', selModo.value);
-            localStorage.setItem('dificultadJuego', selDif.value);
-            localStorage.setItem('volumenGlobal', volSlider.value);
-            // feedback rápido
-            alert('Configuración guardada');
+            // También actualizar el volumen en tiempo real cuando se mueva el slider
+            const sliderVol = document.getElementById('volumenSlider');
+            if (sliderVol) {
+                sliderVol.addEventListener('input', (e) => {
+                    if (bgMusic) bgMusic.volume = parseInt(e.target.value) / 100;
+                });
+            }
         });
-    });
-</script>
+    </script>
+
+    <div class="caja-menu">
+
+        <h2 class="titulo-seccion">Configuración</h2>
+
+        <div class="mb-4">
+            <label class="form-label">Volumen</label>
+            <input id="volumenSlider" type="range" class="form-range" min="0" max="100">
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Dificultad</label>
+            <select id="dificultadSelect" class="form-select">
+                <option value="normal">Normal</option>
+                <option value="caos">Caos en Cocina</option>
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Modo de Juego</label>
+            <select id="modoJuegoSelect" class="form-select">
+                <option value="pvp">1 vs 1 Local</option>
+                <option value="pvia">Jugador vs IA</option>
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Controles</label>
+            <p class="small opacity-75">
+                Jugador 1: WASD<br>
+                Jugador 2: Flechas
+            </p>
+        </div>
+
+        <div class="d-grid gap-2">
+            <button id="guardarConf" class="btn btn-success btn-custom">Guardar</button>
+            <a href="index.html" class="btn btn-secondary btn-custom">Volver</a>
+        </div>
+
+    </div>
+
+    <script>
+        // Inicializar selección desde localStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            const selModo = document.getElementById('modoJuegoSelect');
+            const selDif = document.getElementById('dificultadSelect');
+            const volSlider = document.getElementById('volumenSlider');
+
+            selModo.value = localStorage.getItem('modoJuego') || 'pvp';
+            selDif.value = localStorage.getItem('dificultadJuego') || 'normal';
+            volSlider.value = localStorage.getItem('volumenGlobal') !== null ? localStorage.getItem('volumenGlobal') : 50;
+
+            document.getElementById('guardarConf').addEventListener('click', () => {
+                localStorage.setItem('modoJuego', selModo.value);
+                localStorage.setItem('dificultadJuego', selDif.value);
+                localStorage.setItem('volumenGlobal', volSlider.value);
+
+                window.location.href = "index.html";
+                // feedback rápido
+                //alert('Configuración guardada');
+            });
+        });
+    </script>
 </body>
+
 </html>

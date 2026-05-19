@@ -30,17 +30,32 @@ let agentIAMesh = null;
 let gestorRastros = null;
 let jugadorMuerto = false;
 
+const sonidos = {
+    colision: new Audio("./music/colision.mp3"),
+    ganar: new Audio("./music/win.mp3"),
+    perder: new Audio("./music/lose.mp3"),
+    Selection: new Audio("./music/selection.mp3"),
+    powerUp: new Audio("./music/pick_up.mp3")
+}
+
+const musicaEscenario = {
+    "1": new Audio("./music/firstlevel.mp3"),
+    "2": new Audio("./music/creepylevel.mp3"),
+    "3": new Audio("./music/hardlevel.mp3")
+}
+
+
 // === SISTEMA DE COMBATE Y VIDAS (inline, sin dependencias de módulo) ===
 const COMBATE = {
-    fuego:  { gana: 'hielo',  pierde: 'agua'  },
-    agua:   { gana: 'fuego',  pierde: 'aire'  },
-    hielo:  { gana: 'aire',   pierde: 'fuego' },
-    aire:   { gana: 'agua',   pierde: 'hielo' }
+    fuego: { gana: 'hielo', pierde: 'agua' },
+    agua: { gana: 'fuego', pierde: 'aire' },
+    hielo: { gana: 'aire', pierde: 'fuego' },
+    aire: { gana: 'agua', pierde: 'hielo' }
 };
 function combateResultado(atk, def) {
     const t = COMBATE[atk];
     if (!t) return 'empata';
-    if (t.gana   === def) return 'gana';
+    if (t.gana === def) return 'gana';
     if (t.pierde === def) return 'pierde';
     return 'empata';
 }
@@ -55,7 +70,7 @@ function sumarPuntos(cantidad) {
     puntajeJugador += cantidad;
     const el = document.getElementById('hud-puntaje');
     if (el) el.textContent = puntajeJugador;
-    
+
     // Pequeño efecto visual en el texto
     if (el) {
         el.style.transform = 'scale(1.3)';
@@ -69,7 +84,6 @@ function sumarPuntos(cantidad) {
         });
     }
 }
-
 function dañarJugador(idAtacante) {
     if (jugadorMuerto) return;
     const now = performance.now();
@@ -79,10 +93,12 @@ function dañarJugador(idAtacante) {
     _refrescarHUDJugador();
     _flashPantalla('rgba(255,0,0,0.45)');
     console.log('[COMBATE] Jugador pierde 1 vida. Quedan:', vidasJugador);
-    
+    reproducirSonido('colision');
     if (vidasJugador <= 0) {
         jugadorMuerto = true;
+        reproducirSonido("perder");
         if (idAtacante) socket.emit("FuiEliminado", idAtacante);
+
         setTimeout(() => new bootstrap.Modal(document.getElementById('perderModal')).show(), 700);
     } else {
         if (idAtacante) socket.emit("RecibiDano", idAtacante);
@@ -95,6 +111,7 @@ function dañarIA() {
     tDmgIA = now;
     vidasIA = Math.max(0, vidasIA - 1);
     _refrescarHUDIA();
+    reproducirSonido('colision');
     console.log('[COMBATE] IA pierde 1 vida. Quedan:', vidasIA);
     if (vidasIA <= 0) {
         sumarPuntos(30);
@@ -112,7 +129,7 @@ function verificarCombate() {
         const dist = aiAgent.mesh.position.distanceTo(jugadorLocal.position);
         if (dist < 2.0) {
             const res = combateResultado(aiAgent.elementoIA, elementoActual);
-            if (res === 'gana')   dañarJugador('IA');
+            if (res === 'gana') dañarJugador('IA');
             else if (res === 'pierde') dañarIA();
         }
         if (gestorRastros) {
@@ -129,7 +146,7 @@ function verificarCombate() {
         if (id === 'IA') continue;
         const remoto = jugadoresRemotos[id];
         const elementoRemoto = remoto.userData.elemento || 'normal';
-        
+
         // Colisión cuerpo a cuerpo con otro jugador
         const dist = remoto.position.distanceTo(jugadorLocal.position);
         if (dist < 2.0) {
@@ -233,21 +250,20 @@ let plantillaJugadorRemotoPromise = null;
 // Elementos válidos para asignar al inicio
 const ELEMENTOS_REALES = ["fuego", "agua", "hielo", "aire"];
 let elementoActual = ELEMENTOS_REALES[Math.floor(Math.random() * ELEMENTOS_REALES.length)];
-let colaElementos = [elementoActual];
 
 const mapeoElementoIcono = {
     fuego: "salsa",
-    agua: "limonada", 
+    agua: "limonada",
     hielo: "yogurt",
     aire: "algodon",
     normal: "salsa"
 };
 
 const coloresElemento = {
-    fuego:  0xff3300,
-    agua:   0xffee00,
-    hielo:  0x55ddff,
-    aire:   0xff69b4,
+    fuego: 0xff3300,
+    agua: 0xffee00,
+    hielo: 0x55ddff,
+    aire: 0xff69b4,
     normal: 0x888888
 };
 
@@ -261,26 +277,6 @@ function actualizarUIElementos() {
         iconoActual.src = `iconos/${nombreIcono}.png`;
     }
 
-    // Actualizar cola de elementos
-    const colaContainer = document.getElementById("cola-elementos");
-    if (colaContainer) {
-        colaContainer.innerHTML = "";
-        for (let i = 0; i < colaElementos.length; i++) {
-            if (i > 0) {
-                const flecha = document.createElement("span");
-                flecha.textContent = " → ";
-                flecha.style.color = "#aaa";
-                flecha.style.margin = "0 5px";
-                colaContainer.appendChild(flecha);
-            }
-
-            const img = document.createElement("img");
-            const nombreIcono = mapeoElementoIcono[colaElementos[i]] || "normal";
-            img.src = `iconos/${nombreIcono}.png`;
-            img.className = "icono-elemento";
-            colaContainer.appendChild(img);
-        }
-    }
 }
 
 function aplicarColorModelo(modelo, colorHex) {
@@ -497,7 +493,7 @@ function configurarSockets() {
     });
 
     socket.on("powerUpsActualizados", async (listaPowerUps) => {
-        console.log("PowerUps recibidos:", listaPowerUps);
+        // console.log("PowerUps recibidos:", listaPowerUps);
 
         limpiarPowerUps();
 
@@ -509,6 +505,13 @@ function configurarSockets() {
     socket.on("RastroCreado", (data) => {
         if (!gestorRastros) return;
         gestorRastros.agregar(new THREE.Vector3(data.x, data.y, data.z), data.id, data.elemento);
+    });
+
+    socket.on("GanastePartida", () => {
+        reproducirSonido("ganar");
+        setTimeout(() => {
+            new bootstrap.Modal(document.getElementById("ganarModal")).show();
+        }, 700);
     });
 }
 
@@ -551,7 +554,7 @@ function actualizarJugadoresRemotos(lista) {
             const mesh = jugadoresRemotos[jugador.id];
             mesh.userData.elemento = jugador.elemento || 'normal';
             mesh.userData.angulo = jugador.angulo || 0;
-            
+
             // Actualizar color del jugador remoto si cambió de elemento
             if (mesh.userData.elementoAnterior !== mesh.userData.elemento) {
                 aplicarColorModelo(mesh, coloresElemento[mesh.userData.elemento] || coloresElemento.normal);
@@ -600,7 +603,7 @@ async function spawnAI() {
         // Crear AgentIA con obstaculos y gestor de rastros
         aiAgent = new AgentIA(modeloIA, obstaculos, gestorRastros);
         aiAgent.elementoIA = ELEMENTOS_REALES[Math.floor(Math.random() * ELEMENTOS_REALES.length)];
-        aiAgent.vidasIA    = 3;
+        aiAgent.vidasIA = 3;
         vidasIA = 3;
         _refrescarHUDIA();
         console.log('[IA] Generada en', x, z, '| Elemento:', aiAgent.elementoIA);
@@ -656,7 +659,7 @@ function crearEscena() {
     contenedor.appendChild(renderer.domElement);
 
     // --- CONFIGURACIÓN DE LUCES Y NIEBLA SEGÚN EL ESCENARIO ---
-    
+
     // Configuraciones comunes para la luz direccional (sombras)
     directionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
     directionalLight.castShadow = true;
@@ -686,7 +689,7 @@ function crearEscena() {
         spotLight.target.position.set(0, 0, 0);
         scene.add(spotLight);
         scene.add(spotLight.target);
-        
+
         scene.fog = null; // Sin niebla
 
     } else if (escenarioSeleccionado === "2") {
@@ -713,24 +716,34 @@ function crearEscena() {
         scene.fog = new THREE.FogExp2(FONDO_ESCENARIO["2"], 0.025);
 
     } else {
-        // ESCENARIO 3: Pesadilla Oscura
-        ambientLight = new THREE.AmbientLight(0x330000, 0.2); // Muy poca luz ambiental (rojiza)
+        // ESCENARIO 3: Oscuro pero jugable
+
+        ambientLight = new THREE.AmbientLight(0x403040, 0.75);
         scene.add(ambientLight);
 
-        directionalLight.color.setHex(0x331111); // Luz apenas visible y oscura
-        directionalLight.intensity = 0.5;
-        directionalLight.position.set(0, 25, 0);
+        directionalLight.color.setHex(0xffaa88);
+        directionalLight.intensity = 1.2;
+        directionalLight.position.set(0, 20, 10);
         scene.add(directionalLight);
 
-        // Foco muy cerrado, fuerte y frío, estilo linterna de película de terror
-        spotLight = new THREE.SpotLight(0xffffff, 3.5, 40, Math.PI / 9, 1.0, 2);
-        spotLight.position.set(5, 12, 5);
+        // Spotlight más abierto
+        spotLight = new THREE.SpotLight(
+            0xffffff,
+            2,
+            80,
+            Math.PI / 3,
+            0.4,
+            1
+        );
+
+        spotLight.position.set(0, 18, 8);
         spotLight.target.position.set(0, 0, 0);
+
         scene.add(spotLight);
         scene.add(spotLight.target);
 
-        // Niebla muy densa y negra
-        scene.fog = new THREE.FogExp2(FONDO_ESCENARIO["3"], 0.045);
+        // Niebla MUCHO menos intensa
+        scene.fog = new THREE.FogExp2(0x12070a, 0.012);
     }
 
     const textureLoader = new THREE.TextureLoader();
@@ -752,7 +765,6 @@ function crearEscena() {
     window.addEventListener("resize", actualizarTamanoRenderer);
     actualizarTamanoRenderer();
 }
-
 
 manager.onStart = function (url, itemsLoaded, itemsTotal) {
     //console.log("Started loading file:", url);
@@ -859,7 +871,7 @@ async function cargarJugadorLocalModelo() {
 function configurarTeclado() {
     window.addEventListener("keydown", (event) => {
         teclas[event.key.toLowerCase()] = true;
-        iniciarMusica();
+        //iniciarMusica();
     });
 
     window.addEventListener("keyup", (event) => {
@@ -959,21 +971,16 @@ function animate() {
     if (!jugadorMuerto) {
         moverJugador();
         revisarColisionPowerUps();
-        
+
         // --- Dificultad: Caos en Cocina ---
         if (dificultadJuego === "caos") {
             const ahora = performance.now();
             if (ahora - ultimoCambioCaos >= CAOS_INTERVALO_MS) {
                 ultimoCambioCaos = ahora;
-                
+
                 // Cambiar al elemento al que le ganas
                 elementoActual = COMBATE[elementoActual].gana;
-                
-                // Actualizar UI
-                colaElementos.unshift(elementoActual);
-                if (colaElementos.length > 3) colaElementos.pop();
-                actualizarUIElementos();
-                
+
                 // Efecto de feedback visual
                 const iconoActual = document.getElementById("icono-elemento-actual");
                 if (iconoActual) {
@@ -981,12 +988,12 @@ function animate() {
                     iconoActual.style.transition = 'transform 0.3s ease';
                     setTimeout(() => iconoActual.style.transform = 'scale(1) rotate(0deg)', 300);
                 }
-                
+
                 // Notificar al servidor en PVP
                 if (conectado) {
                     socket.emit("CambiarElemento", { elemento: elementoActual });
                 }
-                
+
                 console.log("[CAOS] Elemento rotado a:", elementoActual);
 
                 // Si estamos jugando contra la IA, la IA cambia al elemento que nos gana
@@ -994,11 +1001,11 @@ function animate() {
                     // El elemento que vence a nuestro nuevo elementoActual es COMBATE[elementoActual].pierde
                     const elementoContraJugador = COMBATE[elementoActual].pierde;
                     aiAgent.elementoIA = elementoContraJugador;
-                    
+
                     // Actualizar color de la IA visualmente
                     aplicarColorModelo(aiAgent.mesh, coloresElemento[elementoContraJugador] || coloresElemento.normal);
                     _refrescarHUDIA();
-                    
+
                     console.log("[CAOS] IA rotada a:", elementoContraJugador, "para intentar vencer a", elementoActual);
                 }
             }
@@ -1020,6 +1027,7 @@ function animate() {
     renderer.render(scene, camera);
 }
 async function cargarEscenario1() {
+    reproducirMusica("1");
     const florero = await cargarModelo3D("./models/florero", "florero", new THREE.Vector3(6, 6, 6));
     florero.position.set(-27, 0, -6);
     florero.rotation.y = Math.PI / 2;
@@ -1048,7 +1056,7 @@ async function cargarEscenario1() {
     scene.add(taza);
     obstaculos.push({ modelo: taza });
 
-    const jugo = await cargarModelo3D("./models/jugo", "jugo", new THREE.Vector3(10, 10, 10));
+    const jugo = await cargarModelo3D("./models/jugo", "jugo", new THREE.Vector3(15, 15, 15));
     jugo.position.set(2, 0, 10);
     jugo.rotation.y = Math.PI / 2;
     scene.add(jugo);
@@ -1057,101 +1065,102 @@ async function cargarEscenario1() {
 
 async function cargarEscenario2() {
     // SUPER POBLADO
-
+    reproducirMusica("2");
     const florero1 = await cargarModelo3D("./models/florero", "florero1", new THREE.Vector3(6, 6, 6));
-    florero1.position.set(-10, 0, -8);
+    florero1.position.set(-18, 0, -15);
     florero1.rotation.y = Math.PI / 2;
     scene.add(florero1);
     obstaculos.push({ modelo: florero1 });
 
     const florero2 = await cargarModelo3D("./models/florero", "florero2", new THREE.Vector3(6, 6, 6));
-    florero2.position.set(11, 0, 7);
+    florero2.position.set(20, 0, 14);
     florero2.rotation.y = Math.PI / 3;
     scene.add(florero2);
     obstaculos.push({ modelo: florero2 });
 
     const mostaza1 = await cargarModelo3D("./models/mostaza", "mostaza1", new THREE.Vector3(0.8, 0.8, 0.8));
-    mostaza1.position.set(5, 0, -9);
+    mostaza1.position.set(12, 0, -18);
     scene.add(mostaza1);
     obstaculos.push({ modelo: mostaza1 });
 
     const mostaza2 = await cargarModelo3D("./models/mostaza", "mostaza2", new THREE.Vector3(0.8, 0.8, 0.8));
-    mostaza2.position.set(-12, 0, 3);
+    mostaza2.position.set(-20, 0, 6);
     scene.add(mostaza2);
     obstaculos.push({ modelo: mostaza2 });
 
     const mayonesa1 = await cargarModelo3D("./models/mayonesa", "mayonesa1", new THREE.Vector3(0.8, 0.8, 0.8));
-    mayonesa1.position.set(-4, 0, 9);
+
+    mayonesa1.position.set(-8, 0, 18)
     scene.add(mayonesa1);
     obstaculos.push({ modelo: mayonesa1 });
 
     const mayonesa2 = await cargarModelo3D("./models/mayonesa", "mayonesa2", new THREE.Vector3(0.8, 0.8, 0.8));
-    mayonesa2.position.set(9, 0, -2);
+    mayonesa2.position.set(18, 0, -4);
     scene.add(mayonesa2);
     obstaculos.push({ modelo: mayonesa2 });
 
     const saleros1 = await cargarModelo3D("./models/saleros", "saleros1", new THREE.Vector3(20, 20, 20));
-    saleros1.position.set(0, 0, -12);
+    saleros1.position.set(0, 0, -22);
     saleros1.rotation.y = Math.PI / 2;
     scene.add(saleros1);
     obstaculos.push({ modelo: saleros1 });
 
     const saleros2 = await cargarModelo3D("./models/saleros", "saleros2", new THREE.Vector3(20, 20, 20));
-    saleros2.position.set(13, 0, 2);
+    saleros2.position.set(22, 0, 4);
     saleros2.rotation.y = Math.PI / 2;
     scene.add(saleros2);
     obstaculos.push({ modelo: saleros2 });
 
     const taza1 = await cargarModelo3D("./models/taza", "taza1", new THREE.Vector3(15, 15, 15));
-    taza1.position.set(-9, 0, 11);
+    taza1.position.set(-16, 0, 20);
     taza1.rotation.y = Math.PI / 2;
     scene.add(taza1);
     obstaculos.push({ modelo: taza1 });
 
     const taza2 = await cargarModelo3D("./models/taza", "taza2", new THREE.Vector3(15, 15, 15));
-    taza2.position.set(3, 0, 5);
+    taza2.position.set(6, 0, 12);
     taza2.rotation.y = Math.PI / 4;
     scene.add(taza2);
     obstaculos.push({ modelo: taza2 });
 
-    const jugo1 = await cargarModelo3D("./models/jugo", "jugo1", new THREE.Vector3(10, 10, 10));
-    jugo1.position.set(-2, 0, -5);
+    const jugo1 = await cargarModelo3D("./models/jugo", "jugo1", new THREE.Vector3(15, 15, 15));
+    jugo1.position.set(-4, 0, -12);
     jugo1.rotation.y = Math.PI / 2;
     scene.add(jugo1);
     obstaculos.push({ modelo: jugo1 });
 
-    const jugo2 = await cargarModelo3D("./models/jugo", "jugo2", new THREE.Vector3(10, 10, 10));
-    jugo2.position.set(10, 0, 12);
+    const jugo2 = await cargarModelo3D("./models/jugo", "jugo2", new THREE.Vector3(15, 15, 15));
+    jugo2.position.set(17, 0, 22);
     jugo2.rotation.y = Math.PI / 2;
     scene.add(jugo2);
     obstaculos.push({ modelo: jugo2 });
 
     const arana = await cargarModelo3D("./models/arana", "arana", new THREE.Vector3(2, 2, 2));
-    arana.position.set(-18, 0, -14);
+    arana.position.set(-24, 0, -18);
     arana.rotation.y = Math.PI / 2;
     scene.add(arana);
     obstaculos.push({ modelo: arana });
 
     const arana1 = await cargarModelo3D("./models/arana", "arana1", new THREE.Vector3(2, 2, 2));
-    arana1.position.set(-18, 0, -14);
+    arana1.position.set(-14, 0, -22);
     arana1.rotation.y = Math.PI / 2;
     scene.add(arana1);
     obstaculos.push({ modelo: arana1 });
 
     const arana2 = await cargarModelo3D("./models/arana", "arana2", new THREE.Vector3(1.7, 1.7, 1.7));
-    arana2.position.set(-6, 0, -15);
+    arana2.position.set(-10, 0, 16);
     arana2.rotation.y = Math.PI;
     scene.add(arana2);
     obstaculos.push({ modelo: arana2 });
 
     const arana3 = await cargarModelo3D("./models/arana", "arana3", new THREE.Vector3(2.2, 2.2, 2.2));
-    arana3.position.set(16, 0, -8);
+    arana3.position.set(24, 0, -12);
     arana3.rotation.y = Math.PI / 4;
     scene.add(arana3);
     obstaculos.push({ modelo: arana3 });
 
     const arana4 = await cargarModelo3D("./models/arana", "arana4", new THREE.Vector3(1.5, 1.5, 1.5));
-    arana4.position.set(2, 0, 15);
+    arana4.position.set(8, 0, 24);
     arana4.rotation.y = -Math.PI / 2;
     scene.add(arana4);
     obstaculos.push({ modelo: arana4 });
@@ -1159,7 +1168,7 @@ async function cargarEscenario2() {
 
 async function cargarEscenario3() {
     // CASI VACÍO
-
+    reproducirMusica("3");
     const taza = await cargarModelo3D("./models/taza", "taza", new THREE.Vector3(15, 15, 15));
     taza.position.set(7, 0, -6);
     taza.rotation.y = Math.PI / 2;
@@ -1222,15 +1231,10 @@ function revisarColisionPowerUps() {
 
         if (jugadorBB.intersectsBox(powerUpBB)) {
             console.log("Agarraste power up:", powerUp.elemento);
-
+            reproducirSonido('powerUp');
             elementoActual = powerUp.elemento;
-            
-            // Agregar a la cola de elementos
-            colaElementos.unshift(elementoActual);
-            if (colaElementos.length > 3) {
-                colaElementos.pop();
-            }
-            
+
+
             // Actualizar UI
             actualizarUIElementos();
 
@@ -1295,21 +1299,28 @@ function crearRastro(posicion, elemento) {
     gestorRastros.agregar(posicion.clone(), 'jugador', elemento);
 }
 
-let musicaIniciada = false;
+function reproducirSonido(nombre) {
+    const sonido = sonidos[nombre];
+    if (!sonido) return;
+    sonido.currentTime = 0;
+    sonido.play().catch(() => { })
+}
 
-function iniciarMusica() {
-    if (musicaIniciada) return;
-    const bgMusic = document.getElementById('bgMusic');
-    if (bgMusic) {
-        // volumen va de 0 a 100, HTML audio.volume va de 0.0 a 1.0
-        const vol = localStorage.getItem('volumenGlobal') !== null ? localStorage.getItem('volumenGlobal') : 50;
-        bgMusic.volume = parseInt(vol) / 100;
-        bgMusic.play().then(() => {
-            musicaIniciada = true;
-        }).catch(err => {
-            console.log("No se pudo reproducir música automáticamente, esperando interacción", err);
-        });
+let musicaActual = null;
+
+function reproducirMusica(escenario) {
+    if (musicaActual) {
+        musicaActual.pause();
+        musicaActual.currentTime = 0;
     }
+
+    musicaActual = musicaEscenario[escenario];
+
+    if (!musicaActual) return;
+
+    musicaActual.loop = true;
+    musicaActual.volume = 0.25;
+    musicaActual.play().catch(() => { });
 }
 
 async function init() {
@@ -1325,7 +1336,7 @@ async function init() {
 
         configurarSockets();
         configurarTeclado();
-        iniciarMusica();
+        //iniciarMusica();
 
         await cargarJugadorLocalModelo();
         await cargarEscenarioSeleccionado();

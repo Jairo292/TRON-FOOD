@@ -51,7 +51,7 @@ const tiposPowerUps = [
 
 function generarPowerUps() {
   powerUps.length = 0;
-  console.log("PowerUps generados:", powerUps);
+  //console.log("PowerUps generados:", powerUps);
   for (let i = 0; i < 8; i++) {
     const tipo = tiposPowerUps[Math.floor(Math.random() * tiposPowerUps.length)];
 
@@ -250,12 +250,13 @@ io.on("connection", (socket) => {
   socket.on("FuiEliminado", (idAtacante) => {
     if (idAtacante && idAtacante !== "IA") {
       io.to(idAtacante).emit("SumaPuntos", 30);
+      io.to(idAtacante).emit("GanastePartida");
     }
   });
 
   socket.on("GuardarPuntaje", (data) => {
     if (!data.nombreJugador || data.puntaje === undefined) return;
-    
+
     // Solo actualizar si el puntaje nuevo es mayor al puntaje maximo actual
     const sql = `
       UPDATE usuarios 

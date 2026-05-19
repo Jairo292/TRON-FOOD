@@ -1,110 +1,108 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Juego - Kitchen Arena</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<link href="juego.css" rel="stylesheet">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juego - Kitchen Arena</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet">
+  <link href="juego.css" rel="stylesheet">
 
 
 </head>
+
 <body>
 
-<!-- Música de fondo -->
-<audio id="bgMusic" loop>
+  <!-- Música de fondo -->
+  <audio id="bgMusic" loop>
     <source src="musica.mp3" type="audio/mpeg">
-</audio>
+  </audio>
 
 
-<div class="hud">
+  <div class="hud">
 
     <div>Vidas: <span id="hud-vidas" style="display:inline"></span></div>
-    <div style="font-size: 1.1em; font-weight: bold; color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.5);">Puntaje: <span id="hud-puntaje">0</span></div>
+    <div style="font-size: 1.1em; font-weight: bold; color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.5);">
+      Puntaje: <span id="hud-puntaje">0</span></div>
 
     <div class="elemento-actual">
-        Elemento Actual:
-        <img id="icono-elemento-actual" src="iconos/salsa.png" class="icono-elemento">
-    </div>
-
-    <div class="queue">
-        Cola:
-        <span id="cola-elementos">
-            <img src="iconos/salsa.png" class="icono-elemento">
-        </span>
+      Elemento Actual:
+      <img id="icono-elemento-actual" src="iconos/salsa.png" class="icono-elemento">
     </div>
 
     <div id="hud-ia" style="font-size:13px;opacity:0.8"></div>
 
     <button class="btn btn-outline-light btn-sm btn-custom" data-bs-toggle="modal" data-bs-target="#pausaModal">
-        Pausa
+      Pausa
     </button>
 
-</div>
+  </div>
 
-<div class="area-juego">
+  <div class="area-juego">
     <div class="campo-juego">
-        Aquí irá el canvas WebGL
+      Aquí irá el canvas WebGL
     </div>
 
-</div>
+  </div>
 
-<div class="modal fade" id="pausaModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content text-center p-4">
-      <h5 class="modal-title mb-3">Juego en Pausa</h5>
-      <div class="d-grid gap-2">
-        <button type="button" class="btn btn-success btn-custom" data-bs-dismiss="modal">
+  <div class="modal fade" id="pausaModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center p-4">
+        <h5 class="modal-title mb-3">Juego en Pausa</h5>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-success btn-custom" data-bs-dismiss="modal">
             Reanudar
-        </button>
-        <a href="index.html" class="btn btn-danger btn-custom">
+          </button>
+          <a href="index.html" class="btn btn-danger btn-custom">
             Salir al Menú
-        </a>
+          </a>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<div class="modal fade" id="ganarModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content text-center p-4 modal-win">
-      <h5 class="modal-title mb-2">YOU WIN!</h5>
-      <p class="mb-3 opacity-75">¡Ganaste la ronda! Cocinaste.</p>
+  <div class="modal fade" id="ganarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center p-4 modal-win">
+        <h5 class="modal-title mb-2">YOU WIN!</h5>
+        <p class="mb-3 opacity-75">¡Ganaste la ronda! Cocinaste.</p>
 
-      <div class="d-grid gap-2">
-        <button type="button" class="btn btn-success btn-custom" data-bs-dismiss="modal" id="btnSiguienteRonda">
-          Siguiente Ronda
-        </button>
-        <a href="index.html" class="btn btn-outline-light btn-custom">
-          Volver al Menú
-        </a>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-success btn-custom" data-bs-dismiss="modal" id="btnSiguienteRonda">
+            Siguiente Ronda
+          </button>
+          <a href="index.html" class="btn btn-outline-light btn-custom">
+            Volver al Menú
+          </a>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<div class="modal fade" id="perderModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content text-center p-4 modal-lose">
-      <h5 class="modal-title mb-2">YOU LOSE!</h5>
-      <p class="mb-3 opacity-75">Se quemó la cocina… inténtalo de nuevo.</p>
+  <div class="modal fade" id="perderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center p-4 modal-lose">
+        <h5 class="modal-title mb-2">YOU LOSE!</h5>
+        <p class="mb-3 opacity-75">Se quemó la cocina… inténtalo de nuevo.</p>
 
-      <div class="d-grid gap-2">
-        <button type="button" class="btn btn-danger btn-custom"  data-bs-dismiss="modal" id="btnReintentar">
-          Reintentar
-        </button>
-        <a href="index.html" class="btn btn-outline-light btn-custom">
-          Salir al Menú
-        </a>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-danger btn-custom" data-bs-dismiss="modal" id="btnReintentar">
+            Reintentar
+          </button>
+          <a href="index.html" class="btn btn-outline-light btn-custom">
+            Salir al Menú
+          </a>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
 
-<script type="importmap">
+  <script type="importmap">
 {
   "imports": {
     "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
@@ -113,20 +111,21 @@
 }
 </script>
 
-<script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
 
-<script>
-window.addEventListener('error', (event) => {
-  console.error('Global error:', event.error);
-});
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled rejection:', event.reason);
-});
-</script>
+  <script>
+    window.addEventListener('error', (event) => {
+      console.error('Global error:', event.error);
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled rejection:', event.reason);
+    });
+  </script>
 
-<script type="module" src="./js/juego.js"></script>
+  <script type="module" src="./js/juego.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
+
 </html>

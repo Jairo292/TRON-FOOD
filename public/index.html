@@ -1,187 +1,164 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Kitchen Arena — el videojuego de cocina multijugador. ¡Elige tu escenario y compite!">
-<title>Kitchen Arena · Menú Principal</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<link href="style.css" rel="stylesheet">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Kitchen Arena — el videojuego de cocina multijugador. ¡Elige tu escenario y compite!">
+    <title>Kitchen Arena · Menú Principal</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
 
 </head>
 
 <body>
 
-<!-- Música de fondo -->
-<audio id="bgMusic" loop>
-    <source src="musica.mp3" type="audio/mpeg">
-</audio>
+    <!-- Música de fondo -->
+    <audio id="bgMusic" loop>
+        <source src="music/menu_music.mp3" type="audio/mpeg">
+    </audio>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        let musicaIniciada = false;
-        const bgMusic = document.getElementById('bgMusic');
-        
-        function iniciarMusica() {
-            if (musicaIniciada || !bgMusic) return;
-            const vol = localStorage.getItem('volumenGlobal') !== null ? localStorage.getItem('volumenGlobal') : 50;
-            bgMusic.volume = parseInt(vol) / 100;
-            bgMusic.play().then(() => {
-                musicaIniciada = true;
-            }).catch(e => console.log("Esperando interacción para reproducir música"));
-        }
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let musicaIniciada = false;
+            const bgMusic = document.getElementById('bgMusic');
 
-        // Intentar iniciar automáticamente y también al primer clic en la pantalla
-        iniciarMusica();
-        document.body.addEventListener('click', iniciarMusica, { once: true });
-    });
-</script>
+            function iniciarMusica() {
+                if (musicaIniciada || !bgMusic) return;
+                const vol = localStorage.getItem('volumenGlobal') !== null ? localStorage.getItem('volumenGlobal') : 50;
+                bgMusic.volume = parseInt(vol) / 100;
+                bgMusic.play().then(() => {
+                    musicaIniciada = true;
+                }).catch(e => console.log("Esperando interacción para reproducir música"));
+            }
 
-<div class="caja-menu marco-neon">
+            // Intentar iniciar automáticamente y también al primer clic en la pantalla
+            iniciarMusica();
+            document.body.addEventListener('click', iniciarMusica, { once: true });
+        });
+    </script>
 
-    <h1 class="titulo-juego">Kitchen Arena</h1>
+    <div class="caja-menu marco-neon">
 
-    <!-- ═══════════════════════════════════════════════
+        <h1 class="titulo-juego">Kitchen Arena</h1>
+
+        <!-- ═══════════════════════════════════════════════
          ZONA DE SESIÓN (se gestiona desde auth.js)
          updateAuthUI() muestra uno de los dos bloques
          según el estado de autenticación.
     ═══════════════════════════════════════════════ -->
-    <div id="zona-sesion" class="zona-sesion mb-4">
+        <div id="zona-sesion" class="zona-sesion mb-4">
 
-        <!-- [A] Sin sesión: Login + Registro -->
-        <div id="zona-invitado" class="auth-zona d-flex justify-content-center gap-3">
+            <!-- [A] Sin sesión: Login + Registro -->
+            <div id="zona-invitado" class="auth-zona d-flex justify-content-center gap-3">
 
-            <button
-                id="btn-login"
-                class="btn btn-outline-light glow"
-                data-bs-toggle="modal"
-                data-bs-target="#loginModal"
-                aria-label="Abrir formulario de inicio de sesión"
-            >
-                🎮 Login
-            </button>
+                <button id="btn-login" class="btn btn-outline-light glow" data-bs-toggle="modal"
+                    data-bs-target="#loginModal" aria-label="Abrir formulario de inicio de sesión">
+                    🎮 Login
+                </button>
 
-            <button
-                id="btn-registro"
-                class="btn btn-outline-warning glow"
-                data-bs-toggle="modal"
-                data-bs-target="#registroModal"
-                aria-label="Abrir formulario de registro"
-            >
-                ✨ Registro
-            </button>
-
-        </div>
-
-        <!-- [B] Con sesión: Avatar + Nombre + Cerrar sesión -->
-        <div id="zona-logueado" class="auth-zona auth-logueado" style="display:none">
-
-            <div class="jugador-card">
-
-                <!-- Avatar circular con inicial del nombre -->
-                <div class="jugador-avatar" aria-hidden="true">
-                    <span id="avatar-letra">?</span>
-                </div>
-
-                <div class="jugador-info">
-                    <span class="jugador-saludo">¡Bienvenido!</span>
-                    <span id="nombre-usuario-display" class="jugador-nombre"></span>
-                </div>
-
-                <button
-                    id="btn-cerrar-sesion"
-                    class="btn btn-cerrar-sesion glow"
-                    onclick="cerrarSesion()"
-                    aria-label="Cerrar sesión"
-                >
-                    <span class="btn-cerrar-icono">⏻</span>
-                    <span class="btn-cerrar-texto">Cerrar sesión</span>
+                <button id="btn-registro" class="btn btn-outline-warning glow" data-bs-toggle="modal"
+                    data-bs-target="#registroModal" aria-label="Abrir formulario de registro">
+                    ✨ Registro
                 </button>
 
             </div>
 
-        </div>
+            <!-- [B] Con sesión: Avatar + Nombre + Cerrar sesión -->
+            <div id="zona-logueado" class="auth-zona auth-logueado" style="display:none">
 
-    </div>
+                <div class="jugador-card">
 
+                    <!-- Avatar circular con inicial del nombre -->
+                    <div class="jugador-avatar" aria-hidden="true">
+                        <span id="avatar-letra">?</span>
+                    </div>
 
-    <!-- BOTONES DEL JUEGO -->
-    <div class="d-grid gap-3 col-12 col-md-6 mx-auto">
+                    <div class="jugador-info">
+                        <span class="jugador-saludo">¡Bienvenido!</span>
+                        <span id="nombre-usuario-display" class="jugador-nombre"></span>
+                    </div>
 
-        <button class="btn btn-lg btn-danger glow" onclick="entrarJuego(1)">
-            Escenario 1
-        </button>
-
-        <button class="btn btn-lg btn-warning glow" onclick="entrarJuego(2)">
-            Escenario 2
-        </button>
-
-        <button class="btn btn-lg btn-info glow" onclick="entrarJuego(3)">
-            Escenario 3
-        </button>
-
-        <a href="configuracion.html" class="btn btn-lg btn-secondary glow">
-            Configuración
-        </a>
-
-        <a href="puntuaciones.html" class="btn btn-lg btn-light glow">
-            Puntuaciones
-        </a>
-
-    </div>
-
-</div>
-
-<!-- MODAL LOGIN -->
-<div class="modal fade" id="loginModal" tabindex="-1">
-
-    <div class="modal-dialog modal-dialog-centered">
-
-        <div class="modal-content modal-neon">
-
-            <div class="modal-header border-0">
-
-                <h3 class="modal-title text-white">
-                    Iniciar Sesión
-                </h3>
-
-                <button
-                    type="button"
-                    class="btn-close btn-close-white"
-                    data-bs-dismiss="modal">
-                </button>
-
-            </div>
-
-            <div class="modal-body">
-
-                <input
-                    id="correoLogin"
-                    type="email"
-                    class="form-control mb-3 input-jugador"
-                    placeholder="Correo"
-                >
-
-                <input
-                    id="passwordLogin"
-                    type="password"
-                    class="form-control mb-3 input-jugador"
-                    placeholder="Contraseña"
-                >
-
-                <button
-                    class="btn btn-success glow w-100"
-                    onclick="login()"
-                >
-                    Entrar
-                </button>
-
-                <div class="mt-3">
-                    <button class="btn btn-primary w-100" onclick="fbLogin()">
-                        Iniciar con Facebook
+                    <button id="btn-cerrar-sesion" class="btn btn-cerrar-sesion glow" onclick="cerrarSesion()"
+                        aria-label="Cerrar sesión">
+                        <span class="btn-cerrar-icono">⏻</span>
+                        <span class="btn-cerrar-texto">Cerrar sesión</span>
                     </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- BOTONES DEL JUEGO -->
+        <div class="d-grid gap-3 col-12 col-md-6 mx-auto">
+
+            <button class="btn btn-lg btn-danger glow" onclick="entrarJuego(1)">
+                Escenario 1
+            </button>
+
+            <button class="btn btn-lg btn-warning glow" onclick="entrarJuego(2)">
+                Escenario 2
+            </button>
+
+            <button class="btn btn-lg btn-info glow" onclick="entrarJuego(3)">
+                Escenario 3
+            </button>
+
+            <a href="configuracion.html" class="btn btn-lg btn-secondary glow">
+                Configuración
+            </a>
+
+            <a href="puntuaciones.html" class="btn btn-lg btn-light glow">
+                Puntuaciones
+            </a>
+
+        </div>
+
+    </div>
+
+    <!-- MODAL LOGIN -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+
+        <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content modal-neon">
+
+                <div class="modal-header border-0">
+
+                    <h3 class="modal-title text-white">
+                        Iniciar Sesión
+                    </h3>
+
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal">
+                    </button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <input id="correoLogin" type="email" class="form-control mb-3 input-jugador" placeholder="Correo">
+
+                    <input id="passwordLogin" type="password" class="form-control mb-3 input-jugador"
+                        placeholder="Contraseña">
+
+                    <button class="btn btn-success glow w-100" onclick="login()">
+                        Entrar
+                    </button>
+
+                    <div class="mt-3">
+                        <button class="btn btn-primary w-100" onclick="fbLogin()">
+                            Iniciar con Facebook
+                        </button>
+                    </div>
+
                 </div>
 
             </div>
@@ -190,59 +167,40 @@
 
     </div>
 
-</div>
+    <!-- MODAL REGISTRO -->
+    <div class="modal fade" id="registroModal" tabindex="-1">
 
-<!-- MODAL REGISTRO -->
-<div class="modal fade" id="registroModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
 
-    <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-neon">
 
-        <div class="modal-content modal-neon">
+                <div class="modal-header border-0">
 
-            <div class="modal-header border-0">
+                    <h3 class="modal-title text-white">
+                        Registro
+                    </h3>
 
-                <h3 class="modal-title text-white">
-                    Registro
-                </h3>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal">
+                    </button>
 
-                <button
-                    type="button"
-                    class="btn-close btn-close-white"
-                    data-bs-dismiss="modal">
-                </button>
+                </div>
 
-            </div>
+                <div class="modal-body">
 
-            <div class="modal-body">
+                    <input id="usuarioRegistro" type="text" class="form-control mb-3 input-jugador"
+                        placeholder="Usuario" maxlength="20">
 
-                <input
-                    id="usuarioRegistro"
-                    type="text"
-                    class="form-control mb-3 input-jugador"
-                    placeholder="Usuario"
-                    maxlength="20"
-                >
+                    <input id="correoRegistro" type="email" class="form-control mb-3 input-jugador"
+                        placeholder="Correo">
 
-                <input
-                    id="correoRegistro"
-                    type="email"
-                    class="form-control mb-3 input-jugador"
-                    placeholder="Correo"
-                >
+                    <input id="passwordRegistro" type="password" class="form-control mb-3 input-jugador"
+                        placeholder="Contraseña">
 
-                <input
-                    id="passwordRegistro"
-                    type="password"
-                    class="form-control mb-3 input-jugador"
-                    placeholder="Contraseña"
-                >
+                    <button class="btn btn-warning glow w-100" onclick="registrar()">
+                        Registrarse
+                    </button>
 
-                <button
-                    class="btn btn-warning glow w-100"
-                    onclick="registrar()"
-                >
-                    Registrarse
-                </button>
+                </div>
 
             </div>
 
@@ -250,33 +208,63 @@
 
     </div>
 
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<!-- auth.js debe cargarse ANTES que script.js -->
-<script src="js/auth.js"></script>
-<script src="js/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- auth.js debe cargarse ANTES que script.js -->
+    <script src="js/auth.js"></script>
+    <script src="js/script.js"></script>
 
 
-<script>
-    window.fbAsyncInit = function() {
-        FB.init({
-            appId      : '3377754062379356',
-            cookie     : true,
-            xfbml      : true,
-            version    : 'v24.0'
+    <script>
+        window.fbAsyncInit = function () {
+            FB.init({
+                appId: '3377754062379356',
+                cookie: true,
+                xfbml: true,
+                version: 'v24.0'
+            });
+            FB.AppEvents && FB.AppEvents.logPageView && FB.AppEvents.logPageView();
+        };
+
+        (function (d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) { return; }
+            js = d.createElement(s); js.id = id;
+            js.src = "https://connect.facebook.net/es_LA/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let musicaIniciada = false;
+            const bgMusic = document.getElementById('bgMusic');
+
+            function iniciarMusica() {
+                if (musicaIniciada || !bgMusic) return;
+
+                const vol = localStorage.getItem('volumenGlobal') !== null
+                    ? localStorage.getItem('volumenGlobal')
+                    : 50;
+
+                bgMusic.volume = parseInt(vol) / 100;
+
+                bgMusic.play().then(() => {
+                    musicaIniciada = true;
+                    console.log("Música del menú iniciada");
+                }).catch(() => {
+                    console.log("Esperando interacción para reproducir música");
+                });
+            }
+
+            iniciarMusica();
+
+            document.addEventListener('click', iniciarMusica);
+            document.addEventListener('keydown', iniciarMusica);
+            document.addEventListener('mousemove', iniciarMusica, { once: true });
+            document.addEventListener('touchstart', iniciarMusica, { once: true });
         });
-        FB.AppEvents && FB.AppEvents.logPageView && FB.AppEvents.logPageView();
-    };
-
-    (function(d, s, id){
-         var js, fjs = d.getElementsByTagName(s)[0];
-         if (d.getElementById(id)) {return;}
-         js = d.createElement(s); js.id = id;
-         js.src = "https://connect.facebook.net/es_LA/sdk.js";
-         fjs.parentNode.insertBefore(js, fjs);
-     }(document, 'script', 'facebook-jssdk'));
-</script>
+    </script>
 
 </body>
+
 </html>
