@@ -743,7 +743,7 @@ function crearEscena() {
         scene.add(spotLight.target);
 
         // Niebla MUCHO menos intensa
-        scene.fog = new THREE.FogExp2(0x12070a, 0.012);
+        scene.fog = new THREE.FogExp2(0x595454, 0.050);
     }
 
     const textureLoader = new THREE.TextureLoader();

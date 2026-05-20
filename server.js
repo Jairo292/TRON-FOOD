@@ -282,6 +282,11 @@ io.on("connection", (socket) => {
 });
 
 setInterval(generarPowerUps, 5000);
+/*
 server.listen(3000, () => {
   console.log("Servidor corriendo en http://localhost:3000");
+});*/
+
+server.listen(3000, "0.0.0.0", () => {
+    console.log("Servidor corriendo");
 });
